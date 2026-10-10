@@ -231,6 +231,29 @@ Two honest ways out, and this is a decision rather than an engineering task:
 Recommendation: buy the unit. Until one of the two is chosen, **no `stable` train can be
 cut** — and that is the process working, not the process being in the way.
 
+## What has actually been released
+
+A **component** release is one repository tagging and shipping itself. A **train** is a set that
+was released together, with a manifest and the gates met. There is one component release and no
+train yet, and the difference matters: the gates above are a property of a train.
+
+| Component | Version | Channel | Date | Commit | Where |
+|---|---|---|---|---|---|
+| [iOS app](https://github.com/ParkWardRR/cairn-ios-companion-app) | **0.1.0 (11)** | `stable` | 2026-10-10 | `75f545d` | TestFlight, uploaded through Xcode's account session. Internal testers get it on processing; external distribution needs the build assigned to the external group in App Store Connect, which requires Beta App Review |
+| server, dashboard, firmware, modules | — | — | — | — | Never tagged. Deployed from a working tree |
+
+The iOS app is the first component in the project to carry a version, a channel and its own
+commit, and `scripts/release-testflight.sh` in that repository is the first release path that
+refuses a dirty tree. The shipped binary reads back `CairnChannel = stable` and
+`CairnCommit = 75f545d`; a build that cannot say what it is reads as `dev` and never as
+`stable`.
+
+**It went out on `stable` at the owner's instruction, ahead of the gates**, which is recorded
+rather than smoothed over: no train manifest existed to attach evidence to, and the drive and
+rollback gates are unmet. What it does carry is a green test suite (340 tests), CI green on the
+macOS runner, and an identity that can be traced back to a commit — which is why a later train
+can state honestly what was in it.
+
 ## Rolling back
 
 | Component | How | Proven? |

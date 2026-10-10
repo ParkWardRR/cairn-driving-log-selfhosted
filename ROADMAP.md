@@ -122,7 +122,7 @@ The original single repository is preserved read-only as
 | **TLS verification, from the failing side** | `env:cairn-tlsneg` pins a wrong CA and the handshake is **rejected** (NOT_TRUSTED, `-0x2700`) while the correct CA verifies. Server side: no client certificate → refused; the right CommonName from an untrusted CA → refused, because identity rests on the chain and not the name |
 | **The server, deployed** | Intake, receipts, escrow, vehicle and counter binding, the app API, the local admin API, the in-memory analytical store. The ledger of the first nine trips reads `offered → committed → receipt_issued → decode_queued`, every one `"path":"ble-relay"` |
 | **The dashboard, deployed** | Every route authenticated by **both** passkeys and Tailnet identity; period statistics; bookmarks, tags, notes and search; the Phones page with QR enrolment and revocation; device-vs-phone GPS comparison; backup and restore; trip images |
-| **The iPhone app, on a device** | TestFlight build 10. The BLE link and bond reuse across dongle reboots, one-QR setup, the Trips tab with route maps, the CarPlay car screen signed and running on hardware, passkey sign-in to the dashboard from Settings |
+| **The iPhone app, on a device** | **TestFlight 0.1.0 (11), channel `stable`, commit `75f545d`, 2026-10-10** — the project's first tagged component release, and the first build that can name its own channel and commit. Before it, build 10. The BLE link and bond reuse across dongle reboots, one-QR setup, the Trips tab with route maps, the CarPlay car screen signed and running on hardware, passkey sign-in to the dashboard from Settings |
 | **Snapshot and restore** | A cold snapshot of the server's state, restored into a scratch stack and booted — as a CI job and as the last step of every deploy |
 
 ### Built, not yet proven
@@ -577,13 +577,13 @@ rename sits uncommitted across twenty files. Nothing can be tagged across a half
 | # | Repo | Required | Issue |
 |---|---|---|---|
 | 1 | dashboard | Land the `bootId → tripId` rename and get the server and dashboard agreeing in CI | — |
-| 2 | **all five** | Make every component state its own identity: version, channel and commit on `/healthz`, in the UI footer, in the firmware banner, and in a bundle's stamp. Firmware still hardcodes `cairn-v2.0.0` in `platformio.ini` while the format is v3 | — |
+| 2 | **all five** | Make every component state its own identity: version, channel and commit on `/healthz`, in the UI footer, in the firmware banner, and in a bundle's stamp. Firmware still hardcodes `cairn-v2.0.0` in `platformio.ini` while the format is v3 | **iOS done 2026-10-10** (`BuildIdentity` in CairnCore, shown in Settings → About). Server, dashboard, firmware outstanding |
 | 3 | front door | `contracts/release/v1`: the feature registry, its schema and vectors. Then triage every user-facing surface into `proven` / `built` / `designed`, with named evidence or none | — |
 | 4 | front door | Severity on every open defect (done in this document), and the rule that `stable` ships with no `blocker` | — |
 | 5 | dashboard | `NUXT_CHANNEL`, a `useFeature()` composable, and **404 in `stable`** for a beta-only route — a page that half works is worse than one that is absent | — |
 | 6 | server | `CAIRN_CHANNEL` gating the endpoints behind beta-only pages, so a hidden page is not a bypassable one | — |
 | 7 | firmware | `-DCAIRN_CHANNEL=` per PlatformIO env, and the channel inside the version string the seal stamps | — |
-| 8 | iOS | A per-scheme channel flag; TestFlight internal is `beta`, external is `stable` | — |
+| 8 | iOS | A per-scheme channel flag; TestFlight internal is `beta`, external is `stable` | **done 2026-10-10.** `CAIRN_CHANNEL` and `CAIRN_COMMIT` are stamped into the Info.plist and read back; `scripts/release-testflight.sh <beta\|stable>` refuses a dirty tree. Feature gating waits on item 3 |
 | 9 | server + dashboard | The **beta stack** on the host: `cairn-{server,tsdb,ui}-beta`, ports `9443/9444/9445/9446/9480/3100`, `/var/lib/cairn-beta`, `/etc/cairn-beta`, and the UI under `/beta` on the existing origin — **a second hostname would require enrolling every passkey again** | — |
 | 10 | server + dashboard | `--channel beta\|stable` on both deploy scripts, and `stable` **refuses a dirty tree**: a release that cannot be reproduced is not one | — |
 | 11 | **all five** | A release workflow on the Podman runners: build on tag, checksum, attach the artifact to a GitHub release. Merged firmware image and manifest is [firmware #24](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/24) | — |

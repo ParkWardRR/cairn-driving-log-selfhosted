@@ -110,6 +110,7 @@ opposite constraint, and most design decisions follow from it:
 | Run it yourself | [Build and run](#build-and-run), then each repository's own README and deploy guide |
 | Build on it or write a client | The [contracts](contracts/) |
 | See where it is going | [ROADMAP.md](ROADMAP.md) |
+| Know what is finished and what is rough | [The release process](docs/release-process.md): `dev`, `beta` and `stable`, and the rule that decides which features reach a `stable` build |
 
 ## How the pieces fit
 

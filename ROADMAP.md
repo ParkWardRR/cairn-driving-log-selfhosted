@@ -16,9 +16,9 @@
 <p align="center"><strong>One roadmap for all six repositories: where the project has been, where it is going, and what each repository has to do next.</strong></p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/reviewed-2026--10--08-2E86C1?style=flat-square" alt="Reviewed 2026-10-08">
+  <img src="https://img.shields.io/badge/reviewed-2026--10--10-2E86C1?style=flat-square" alt="Reviewed 2026-10-10">
   <img src="https://img.shields.io/badge/architecture-v3-2E86C1?style=flat-square" alt="Architecture v3">
-  <img src="https://img.shields.io/badge/contracts-v0.5.0-2E86C1?style=flat-square" alt="contracts-v0.5.0">
+  <img src="https://img.shields.io/badge/contracts-v0.6.0-2E86C1?style=flat-square" alt="contracts-v0.6.0">
   <img src="https://img.shields.io/badge/transports-BLE_·_LTE_proven-27AE60?style=flat-square" alt="BLE and LTE proven on hardware">
   <img src="https://img.shields.io/badge/first_trips-carried_2026--10--06-27AE60?style=flat-square" alt="First trips carried 2026-10-06">
 </p>
@@ -79,12 +79,18 @@ flowchart LR
 | # | Phase | One drive away? | Blocked on |
 |---|---|---|---|
 | **27** | [A trip you can trust](#phase-27--a-trip-you-can-trust--in-progress) | **Yes.** Every fix is landed and unverified | One drive with a GNSS fix |
+| **36** | [Two channels: beta and stable](#phase-36--two-channels-beta-and-stable--planned) | No | The dashboard's `bootId → tripId` rename landing; then its own work |
 | **28** | [The networked dongle, finished](#phase-28--the-networked-dongle-finished--in-progress) | No | BLE/Wi-Fi coexistence, a PKI decision, a config contract |
 | **29** | [The phone becomes the app](#phase-29--the-phone-becomes-the-app--in-progress) | No | CoreBluetooth offload wiring, an enrolment screen |
 | **M3–M4** | [Modules reach the store and the web](#m1m7--the-module-system--in-progress) | No | Module views, `v_metric_samples`, a web consumer |
 
 Everything else — insight, sharing, data control, chip hardening — is real work with issues
 filed, sequenced [below](#next-phases-per-repository) behind these.
+
+**Phase 36 was added on 2026-10-10** and runs beside the others rather than after them: much of
+the project is Built and unproven, and today there is no way to ship it as such. It also
+promotes [Phase 32](#phase-32--release-engineering-flash-it-from-a-browser--planned) onto the
+critical path, because the owner chose a `stable` release that a stranger can install.
 
 ## Who owns what
 
@@ -165,19 +171,24 @@ Every open defect across the six repositories, newest first. A fix that has land
 been confirmed on hardware is **Built**, not **Proven** — the issue stays open until a drive
 says otherwise.
 
-| Repo | Issue | Defect | State |
-|---|---|---|---|
-| firmware | [#39](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/39) | A bundle did not record which engine profile produced it | **Built.** The seal stamps the profile into `firmware_version` (31 of 32 bytes used); manifest key 29 `engine_profile` now exists in `contracts-v0.5.0`, so the first-class field can replace the suffix |
-| firmware | [#38](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/38) | Every trip dated 1970: the UTC basis lived only in RAM, and was anchored at the wrong instant | **Built.** A CRC'd `utcbasis.bin` sidecar survives a resume, and the basis is now UTC at monotonic zero. One new storage-matrix row (41 → 42). Needs a drive with a fix |
-| firmware | [#37](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/37) | Blocking OBD reads starved the sensing task: 766 s of a 1002 s drive empty, and GNSS starved with it | **Built.** 350 ms per read, fail-fast after two misses, and partial multi-PID batches accepted instead of discarded. Bench power reports `obd=absent`, so this path cannot run on the desk |
-| firmware | [#34](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/34) | A Wi-Fi slot is never announced to the phone, and the check-in is a no-op | Open. Both are unreleased `ble/v1` fields |
-| firmware | [#33](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/33) | Static DRAM is the binding constraint; the remaining manifest buffers need a platform alloc shim | Open |
-| firmware | [#32](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/32) | Lowering `CAIRN_MAX_CHUNKS` strands already-sealed bundles; one 1.17 MB bundle is stranded now | Open. The constant is part of the on-card compatibility surface: raise freely, lower only knowing what is already sealed |
-| firmware | [#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31) | Wi-Fi cannot associate while the BLE controller is initialised — `HANDSHAKE_TIMEOUT` after 25 s, measured three times | Open. Wi-Fi is gated off in production and LTE carries the data |
-| firmware | [#6](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/6) | A Wi-Fi password may remain readable in the dongle's flash | Open. Rotate, erase or encrypt |
-| firmware | [#5](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/5) | The local BLE passkey is weak, and a session is not authenticated by an enrolled challenge | Open. The shipping pairing (MITM + DISPLAY_ONLY) must be restored with it |
-| server | [#42](https://github.com/ParkWardRR/cairn-vehicle-server/issues/42) | `cairn-phone` nil-pointer dereference during BLE service discovery | Open — recovered at runtime, still a defect |
-| firmware | — | **Seven legacy v2 bundles (4.76 MB) are stranded.** Their manifests are v2 and both ends are v3, so no transport can move them. They sort first, so a transfer budget must not be charged for a bundle that failed to open | A prov-console command to drop pre-v3 bundles is chosen and not built ([#32](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/32)) |
+**Severity** is what the release process reads: `blocker` means no `stable` train ships with it
+open; `beta-ok` means it ships in `beta` and the feature it touches stays out of `stable`;
+`known` means documented, shipped, not fixed. The triage and its reasoning are in
+[the release process](docs/release-process.md#severity-and-what-blocks-a-public-release).
+
+| Repo | Issue | Defect | Severity | State |
+|---|---|---|---|---|
+| firmware | [#39](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/39) | A bundle did not record which engine profile produced it | `blocker`, cleared by the drive gate | **Built.** The seal stamps the profile into `firmware_version` (31 of 32 bytes used); manifest key 29 `engine_profile` now exists in `contracts-v0.5.0`, so the first-class field can replace the suffix |
+| firmware | [#38](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/38) | Every trip dated 1970: the UTC basis lived only in RAM, and was anchored at the wrong instant | `blocker`, cleared by the drive gate | **Built.** A CRC'd `utcbasis.bin` sidecar survives a resume, and the basis is now UTC at monotonic zero. One new storage-matrix row (41 → 42). Needs a drive with a fix |
+| firmware | [#37](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/37) | Blocking OBD reads starved the sensing task: 766 s of a 1002 s drive empty, and GNSS starved with it | `blocker`, cleared by the drive gate | **Built.** 350 ms per read, fail-fast after two misses, and partial multi-PID batches accepted instead of discarded. Bench power reports `obd=absent`, so this path cannot run on the desk |
+| firmware | [#34](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/34) | A Wi-Fi slot is never announced to the phone, and the check-in is a no-op | `beta-ok` | Open. Both are unreleased `ble/v1` fields |
+| firmware | [#33](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/33) | Static DRAM is the binding constraint; the remaining manifest buffers need a platform alloc shim | `known` | Open |
+| firmware | [#32](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/32) | Lowering `CAIRN_MAX_CHUNKS` strands already-sealed bundles; one 1.17 MB bundle is stranded now | `known` | Open. The constant is part of the on-card compatibility surface: raise freely, lower only knowing what is already sealed |
+| firmware | [#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31) | Wi-Fi cannot associate while the BLE controller is initialised — `HANDSHAKE_TIMEOUT` after 25 s, measured three times | `beta-ok` | Open. Wi-Fi is gated off in production and LTE carries the data |
+| firmware | [#6](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/6) | A Wi-Fi password may remain readable in the dongle's flash | `blocker` | Open. Rotate, erase or encrypt |
+| firmware | [#5](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/5) | The local BLE passkey is weak, and a session is not authenticated by an enrolled challenge | `blocker` | Open. The shipping pairing (MITM + DISPLAY_ONLY) must be restored with it |
+| server | [#42](https://github.com/ParkWardRR/cairn-vehicle-server/issues/42) | `cairn-phone` nil-pointer dereference during BLE service discovery | `beta-ok` | Open — recovered at runtime, still a defect |
+| firmware | — | **Seven legacy v2 bundles (4.76 MB) are stranded.** Their manifests are v2 and both ends are v3, so no transport can move them. They sort first, so a transfer budget must not be charged for a bundle that failed to open | `known` | A prov-console command to drop pre-v3 bundles is chosen and not built ([#32](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/32)) |
 
 ## The phase index
 
@@ -240,10 +251,11 @@ independent features. Breaking changes were authorised; v2 is dead.
 | M1–M7 | [The module system](#m1m7--the-module-system--in-progress) | **M1, M2 and M3's derivations done** |
 | 30 | [Insight: history, health and engine-aware views](#phase-30--insight-history-health-and-engine-aware-views--in-progress) | **in progress** |
 | 31 | [Sharing and data control](#phase-31--sharing-and-data-control--planned) | **planned** |
-| 32 | [Release engineering: flash it from a browser](#phase-32--release-engineering-flash-it-from-a-browser--planned) | **planned** |
+| 32 | [Release engineering: flash it from a browser](#phase-32--release-engineering-flash-it-from-a-browser--planned) | **planned** — on the critical path to `stable` since 2026-10-10 |
 | 33 | [Speed: boot, time-to-upload, time-to-visible](#phase-33--speed-boot-time-to-upload-time-to-visible--planned) | **planned** |
 | 34 | [Chip hardening on replacement hardware](#phase-34--chip-hardening-on-replacement-hardware--planned-gated) | **planned, gated** |
 | 35 | [Routes, stretches and marking a drive](#phase-35--routes-stretches-and-marking-a-drive--planned-two-decisions-open) | **planned, two decisions open** |
+| 36 | [Two channels: beta and stable](#phase-36--two-channels-beta-and-stable--planned) | **planned** — added 2026-10-10 |
 
 ---
 
@@ -443,6 +455,10 @@ encrypted store already exports and imports.
 Today, installing Cairn on a dongle means a Mac, PlatformIO and a serial cable. That is a wall
 in front of every other feature.
 
+**On the critical path since 2026-10-10.** The owner chose a `stable` channel that is public
+from its first tag ([Phase 36](#phase-36--two-channels-beta-and-stable--planned)), so this phase
+is no longer optional polish: it is what makes a `stable` release installable at all.
+
 **Closes when:** a person with a dongle and a Chromium browser can flash it, enrol it and see a
 trip, without a toolchain.
 
@@ -524,6 +540,73 @@ afterwards on the right stretch, carrying the telemetry that was actually live a
 | iOS | Store a location track per drive (Phase 3 work, still open) — a route cannot be classified without one, which makes retention and delete-all matter | — |
 | dashboard | Draw a route with its shape named, stretches selectable, marks on the route map and the speed trace, and search by mark kind | — |
 | firmware | Only if "save a clip either side of the tap" is to be exact. A phone-side ring buffer of the last N seconds works with today's firmware and holds only what BLE delivered; asking the dongle for the window is complete but needs a new characteristic. *Recommendation: ship the ring buffer first* | — |
+
+## Phase 36 — Two channels: beta and stable — **planned**
+
+The owner's read of 2026-10-10: *the project got further, faster, than intended, and parts of it
+are rough.* That is accurate and this document already says so — the
+[Built, not yet proven](#built-not-yet-proven) list is six entries long. What is missing is any
+way to **act** on it. There is no tag on any component, no artifact anyone can install, and
+`deploy-v3.sh` ships the working tree, so uncommitted code can reach the machine the car uploads
+to. Rough and finished arrive together with nothing telling them apart.
+
+Three channels fix that: **`dev`** (the working tree, exactly as fast as today), **`beta`** (a
+tagged pre-release on its own stack on the host, every feature on), **`stable`** (a tagged
+release, **only features marked `proven`**). Maturity is this document's own vocabulary, held in
+a contract the four consumers read, so there is one list and no forked code. The full design —
+port map, manifest schema, gates, rollback, the defect triage — is
+[docs/release-process.md](docs/release-process.md).
+
+**Decided by the owner, 2026-10-10:** `stable` is **public from the first tag** (which promotes
+[Phase 32](#phase-32--release-engineering-flash-it-from-a-browser--planned) onto the critical
+path); `beta` is a **second stack on the prod host**, not the Mac, because every bug so far has
+lived where the real certificates and real uploads are; versions are **per-repository semver plus
+a release-train manifest**, extending the `contracts.lock` pattern rather than inventing one;
+rough features are **flag-gated in `stable`, enabled in `beta`**; and promotion needs **five
+gates**: CI green, one real drive, a restore-tested snapshot, firmware rollback exercised on
+hardware, and no open `blocker` defect.
+
+**Closes when:** `cairn-0.1.0-beta.1` and `cairn-0.1.0` both exist, each is deployable by one
+command naming its channel, and the thing that decides whether a feature is in `stable` is its
+recorded evidence rather than anyone's memory.
+
+**Order matters here, and the first item is not optional.** The server has landed
+`trip_summary` keyed on the trip (75ed973) while the dashboard's matching `bootId → tripId`
+rename sits uncommitted across twenty files. Nothing can be tagged across a half-landed rename.
+
+| # | Repo | Required | Issue |
+|---|---|---|---|
+| 1 | dashboard | Land the `bootId → tripId` rename and get the server and dashboard agreeing in CI | — |
+| 2 | **all five** | Make every component state its own identity: version, channel and commit on `/healthz`, in the UI footer, in the firmware banner, and in a bundle's stamp. Firmware still hardcodes `cairn-v2.0.0` in `platformio.ini` while the format is v3 | — |
+| 3 | front door | `contracts/release/v1`: the feature registry, its schema and vectors. Then triage every user-facing surface into `proven` / `built` / `designed`, with named evidence or none | — |
+| 4 | front door | Severity on every open defect (done in this document), and the rule that `stable` ships with no `blocker` | — |
+| 5 | dashboard | `NUXT_CHANNEL`, a `useFeature()` composable, and **404 in `stable`** for a beta-only route — a page that half works is worse than one that is absent | — |
+| 6 | server | `CAIRN_CHANNEL` gating the endpoints behind beta-only pages, so a hidden page is not a bypassable one | — |
+| 7 | firmware | `-DCAIRN_CHANNEL=` per PlatformIO env, and the channel inside the version string the seal stamps | — |
+| 8 | iOS | A per-scheme channel flag; TestFlight internal is `beta`, external is `stable` | — |
+| 9 | server + dashboard | The **beta stack** on the host: `cairn-{server,tsdb,ui}-beta`, ports `9443/9444/9445/9446/9480/3100`, `/var/lib/cairn-beta`, `/etc/cairn-beta`, and the UI under `/beta` on the existing origin — **a second hostname would require enrolling every passkey again** | — |
+| 10 | server + dashboard | `--channel beta\|stable` on both deploy scripts, and `stable` **refuses a dirty tree**: a release that cannot be reproduced is not one | — |
+| 11 | **all five** | A release workflow on the Podman runners: build on tag, checksum, attach the artifact to a GitHub release. Merged firmware image and manifest is [firmware #24](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/24) | — |
+| 12 | front door | `releases/cairn-<version>.yaml` and `tools/cmd/release-check`: tags resolve to their commits, every `contracts.lock` matches the train's pin, artifacts match their checksums, and a `stable` train with an unmet gate is refused | — |
+| 13 | front door | Cut `cairn-0.1.0-beta.1`, soak it on the beta stack, take the drive, record the evidence | — |
+
+**What `stable` needs beyond all of that**, because it is public: a merged flashable image
+([firmware #24](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/24)), OTA
+exercised on hardware ([firmware #11](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/11)),
+browser flashing ([dashboard #17](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/issues/17)),
+an [INSTALL.md](INSTALL.md) that no longer opens "there are no prebuilt release artifacts yet"
+([#16](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/issues/16)), and the two
+security blockers closed — the weak BLE pairing
+([firmware #5](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/5)) and the
+Wi-Fi password in flash ([firmware #6](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/6)).
+
+**One decision is still the owner's, and it blocks the first `stable` tag.** The rollback gate
+cannot be met with one dongle and no spare: power-loss-during-update on the unit in the car is
+the one test that can brick the project. Either **buy a second dongle** — which also unblocks
+[Phase 34](#phase-34--chip-hardening-on-replacement-hardware--planned-gated), stuck behind the
+same missing unit since it was written — or **ship `stable` with OTA as a beta-only feature** and
+say in `INSTALL.md` that a stable install is flashed over a cable. *Recommendation: buy the
+unit.* Until one is chosen, no `stable` train can be cut.
 
 ---
 
@@ -639,6 +722,13 @@ break one does not ship.
 | LTE payload | **Whole sealed bundles, not digests** (2026-10-07) — see invariant 2. Compression is not worth building either: a trip is about 230 KB, and `gzip -9` reduces AEAD ciphertext only to 90% of raw (measured) |
 | Module delivery | A sixth repository; a module declares the PIDs it needs; declarative at runtime for server, web and iOS, codegen for the firmware |
 | Tagging a contract release | A maintainer, never CI |
+| Release channels | **Three: `dev`, `beta`, `stable`** (2026-10-10). `dev` is the working tree with no promise; `beta` is tagged and runs on a second stack on the prod host; `stable` is tagged, public from the first tag, and carries **only** features marked `proven`. No release branches: `main` plus tags, because six repositories and one maintainer cannot pay a merge cost per channel |
+| Versioning | **Per-repository semver, pre-1.0, plus a release-train manifest** in the front door naming every component's tag, commit and the one `contracts-vX.Y.Z` they all pin. A repository that did not change does not get a tag. `1.0.0` waits for [Phase 32](#phase-32--release-engineering-flash-it-from-a-browser--planned) |
+| Which features are in `stable` | Decided by **recorded maturity, not judgement**: `contracts/release/v1/features.json` marks each surface `proven` / `built` / `designed`, and `proven` requires named evidence. Flag-gated in `stable`, enabled in `beta` — one list, no forked code |
+| Where `beta` runs | A **second stack on the prod host**, own ports and own data directory, seeded by restoring a prod snapshot. Not the Mac: every bug so far has lived where the real certificates and real uploads are. The UI goes under `/beta` on the existing origin, because a passkey is bound to its origin and a second hostname means enrolling every credential again |
+
+The promotion gates, the port map and the defect triage are in
+[docs/release-process.md](docs/release-process.md).
 
 Target hardware is **classic ESP32** (Xtensa LX6, WROVER with PSRAM), not an S3. There is no
 secure element, and the eFuse flash-encryption key cannot be read or derived from by software,
@@ -662,6 +752,7 @@ can be recognised as stale rather than followed.
 | 2026-10-07 | **Shipping beat the gate.** Credentials are in plaintext flash in the gitignored `include/secrets.h`, and the transports are live. A knowing trade, not an oversight: a flash dump permits uploading **as** this device and reading what it uploads, but not deleting anything, because a prune requires a server-signed receipt verified on-device |
 | 2026-10-07 | The **LTE hardware is confirmed**: a SIMCOM SIM7600A-H answered on the car's own dongle. Earlier notes calling the modem absent were reading an unpowered socket |
 | 2026-10-08 | **A module system**, in a sixth repository, with all six interpretations carved out of the core |
+| 2026-10-10 | **The project gets channels.** The owner's read was that it ran further and faster than intended and parts are rough. Nothing is cancelled and `dev` does not slow down; what changes is that `stable` ships only what has evidence, `beta` carries the rest openly, and [Phase 32](#phase-32--release-engineering-flash-it-from-a-browser--planned) moves onto the critical path because `stable` is public from its first tag ([Phase 36](#phase-36--two-channels-beta-and-stable--planned)) |
 | 2026-10-08 | Time is collected from **every** source — GNSS, the cellular network, the phone — and the backend chooses. The manifest basis stays first-wins; the `TIME_OBSERVATION` records are the evidence trail |
 
 ## Deferred deliberately

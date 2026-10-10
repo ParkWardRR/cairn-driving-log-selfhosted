@@ -5,7 +5,21 @@ publishes. Protocol directories are versioned independently of the collection ta
 
 ## Unreleased
 
-Nothing yet.
+**`store/v1.4` is on `main` and in no tag.** `a trip is an outing, not a power cycle`
+([485ae9a](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/commit/485ae9a)) added
+the `v_trip_leg` view and moved `store_contract` to `store/v1.4`. The change is purely
+additive — no relation was removed and no column changed type — so a consumer pinning
+`contracts-v0.6.0` is still satisfied.
+
+What it means in practice: a **trip** is now the whole outing, and a **leg** is one power
+cycle within it. `v_trip_summary` is keyed on the trip; `v_trip_leg` is how the boots that
+made it up are still reachable.
+
+The server already serves it (`internal/tsdb.StoreContract = "store/v1.4"`), and on
+2026-10-10 `go run ./cmd/dump-schema` against the live code path produced a file
+**byte-identical** to the one committed here — so the contract and its implementation agree
+and the only thing missing is a tag. Until one is cut, every consumer pins a contract older
+than the store that answers them.
 
 ## 0.6.0 (2026-10-09)
 

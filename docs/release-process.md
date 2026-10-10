@@ -240,7 +240,22 @@ train yet, and the difference matters: the gates above are a property of a train
 | Component | Version | Channel | Date | Commit | Where |
 |---|---|---|---|---|---|
 | [iOS app](https://github.com/ParkWardRR/cairn-ios-companion-app) | **0.1.0 (11)** | `stable` | 2026-10-10 | `75f545d` | TestFlight, uploaded through Xcode's account session. Internal testers get it on processing; external distribution needs the build assigned to the external group in App Store Connect, which requires Beta App Review |
-| server, dashboard, firmware, modules | — | — | — | — | Never tagged. Deployed from a working tree |
+| [server](https://github.com/ParkWardRR/cairn-vehicle-server) | **v0.1.0** | `stable` | 2026-10-10 | `fc86c63` | Deployed to the live host from a clean export of the tag, after a snapshot that restore-tested. `/healthz` and `/v1/health` both report `version v0.1.0, channel stable` |
+| [firmware](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | **v0.1.0** | `stable` | 2026-10-10 | `26acdbb` | Flashed to the car's dongle over the cable, NVS backed up first. The boot banner reads `Cairn cairn-v0.1.0 (stable), policy v1, commit 26acdbbab48c58c7` |
+| dashboard, modules | — | — | — | — | Never tagged. Deployed from a working tree |
+
+The dashboard is the one deployed component with no version, and it is blocked rather than
+skipped: its `bootId → tripId` rename is uncommitted across twenty files, and nothing can be
+tagged across a half-landed rename (Phase 36 item 1).
+
+### What the three releases do and do not prove
+
+| Proven on 2026-10-10 | Not proven |
+|---|---|
+| Every component states its channel, version and commit, and the two ends of the chain agree on `v0.1.0` | **A bundle has not moved between this firmware and this server.** The BLE pairing now fails on the dongle, so the offload path is untested since 2026-10-06 |
+| The public Funnel ingress reaches the server: from outside the tailnet, `cairn.fable-minnow.ts.net:8443` answers with the real `CN=cairn.alpina.casa` certificate from `Cairn Private CA` | The LTE uplink with these builds. It is scheduled on the device, not driven from here |
+| The store serves real data through the new trip keying: 2 trips, 1,256 positions, 572 OBD rows, 3 metric samples | A drive. Phase 27's gate is still open and no release has met it |
+| The snapshot restore-tested before the install, and the install kept the previous binaries as `.prev` | A rollback. The mechanism exists and has never been used in anger |
 
 The iOS app is the first component in the project to carry a version, a channel and its own
 commit, and `scripts/release-testflight.sh` in that repository is the first release path that

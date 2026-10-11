@@ -644,15 +644,16 @@ unnoticed. The latest release is **`contracts-v0.7.0`** (2026-10-10).
 
 | Repository | Pinned to | Note |
 |---|---|---|
-| server | `contracts-v0.6.0` | current. Was ahead of every tag on the §7 identity rule until this release |
-| firmware | `contracts-v0.6.0` | current. v0.6.0 is byte-identical for every protocol it pins |
-| dashboard | `contracts-v0.6.0` | current. Was on v0.1.0, four behind, because the pin had **no consumer** — no CI job fetched it. It has one now: every relation the built queries read must be declared by the pinned schema |
-| iOS app | `contracts-v0.6.0` | current. Was on v0.2.0, three behind; `DEVICE_INFO` had left draft two releases earlier and the app was still replaying the draft vectors |
-| modules | `contracts-v0.6.0` | current. Could not take v0.5.0 **at all** — see below |
+| server | **`contracts-v0.7.0`** | current. It implemented both halves of v0.7.0 before the tag existed, so the bump records what was already true |
+| firmware | **`contracts-v0.7.0`** | current. Nothing it pins moved: `format/v3`, `ble/v1` and `engine/v1` are byte-identical to v0.6.0 |
+| modules | **`contracts-v0.7.0`** | current. The bump moved **no digest** — `boost` still `1f5f8633bcbd5ff8`, the set `808292016d9d2937` — which is evidence `modgen` and the server's `internal/modules` still agree on the §7 rule rather than only with each other |
+| dashboard | `contracts-v0.6.0` | **one behind, on purpose.** Its `bootId → tripId` rename is uncommitted across twenty files; the pin should move with that work, not ahead of it |
+| iOS app | `contracts-v0.6.0` | **one behind, on purpose, and this is the important one.** v0.7.0 re-keys a `trip_summary` from `<vehicle_id>:<boot_id>` to `<vehicle_id>:<started_ms>`, which the app does not implement. Worse, **its tests cannot catch that**: it replays `sync/v1/vectors/exchanges.json`, which contains no `trip_summary` payload at all. Bumping the lock would have it *claim* conformance to a protocol whose entity identity it gets wrong, while CI stayed green. The pin moves with the fix |
 
-All five consumers were brought to the current release on 2026-10-09, and
-`tools/cmd/pin-dashboard` now counts how many releases each pin is behind, because a stale
-pin was otherwise invisible.
+Three of five moved to `contracts-v0.7.0` on 2026-10-10; the two that did not are held for stated
+reasons rather than drifting. `tools/cmd/pin-dashboard` counts how many releases each pin is
+behind, because a stale pin was otherwise invisible — and a **deliberately** held pin has to be
+explained here, or the next person reads it as neglect and bumps it.
 
 **`contracts-v0.5.0` was an inconsistent release, and the guard that said so was working.**
 `engine/v1` gained `pedal_pct` in that tag; `module/v1`'s `$defs/engine_field` did not get it

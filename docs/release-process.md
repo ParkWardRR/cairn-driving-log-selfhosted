@@ -93,7 +93,10 @@ supersedes: null
 A new tool, `tools/cmd/release-check`, validates it and is the thing CI runs:
 
 1. every `tag` resolves, and resolves to the stated `commit`;
-2. every component's `contracts.lock` at that commit pins the train's `contracts` tag;
+2. every component's `contracts.lock` at that commit pins the train's `contracts` tag — unless the
+   train records an explicit **held** pin with a reason, because a consumer that cannot yet honour
+   a contract must not declare that it does (the iOS app and `contracts-v0.7.0` are the worked
+   example: see [the pin table](../ROADMAP.md#contract-pins-and-what-a-bump-unblocks));
 3. every artifact named exists on the release and matches its `sha256`;
 4. for `channel: stable`, **every gate has non-null evidence**;
 5. no feature with `maturity != proven` is enabled in a `stable` train.

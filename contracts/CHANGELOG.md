@@ -46,10 +46,16 @@ than declared:
 
 > **The vectors do not cover `trip_summary`.** `sync/v1/vectors/exchanges.json` exercises the
 > exchange mechanics — push, pull, ack, request signing — and contains no `trip_summary`
-> payload, so **a consumer that only replays the vectors will not notice this change**. The
-> iOS app is exactly such a consumer. Read the spec section, not the vectors, when adopting
-> this tag. Nothing in the vectors contradicts the new spec, which is what makes the tag
-> consumable.
+> payload, so **a consumer that only replays the vectors will not notice this change**. Read
+> the spec section, not the vectors, when adopting this tag. Nothing in the vectors
+> contradicts the new spec, which is what makes the tag consumable.
+>
+> This note first named the iOS app as such a consumer. It is not one — it reads trips from a
+> store snapshot and never decodes a `trip_summary` entity — so today **no shipped consumer
+> reads this entity at all**, and the server is its only implementation. That is worth knowing
+> before trusting the re-keying: `sync/v1` cannot leave draft until something independent
+> consumes it, and adding `trip_summary` vectors is what would make the next consumer's
+> mistake visible.
 
 ### `store/v1` — additive, `store/v1.3` → **`store/v1.4`**
 
@@ -69,7 +75,7 @@ and its implementation agree.
 |---|---|
 | server | Already implements both halves (`internal/tsdb.StoreContract = "store/v1.4"`, trip-keyed `trip_summary`). The pin bump records what is already true |
 | dashboard | Its `storeContract` test can now see `v_trip_leg`; its own `bootId → tripId` rename is the matching work and is not yet landed |
-| iOS | **Read the `sync/v1` note above.** It replays the exchange vectors, which do not cover `trip_summary`, so its tests will stay green while its trip identity is wrong |
+| iOS | **Nothing.** Corrected 2026-10-10: this row first said to read the `sync/v1` note, on the assumption that the app consumes `trip_summary`. It does not — its trips come from a store snapshot and the only relations it queries are `drive_summary`, `position` and `boost`. It pins v0.7.0. The app showing per-boot drives rather than outings is a product gap, [iOS #40](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/40), not a conformance one |
 | firmware | Nothing. It pins `format/v3` and `ble/v1`, neither of which moved |
 | modules | Nothing. `module/v1` is byte-identical to v0.6.0 |
 

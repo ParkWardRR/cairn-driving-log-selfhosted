@@ -648,10 +648,10 @@ unnoticed. The latest release is **`contracts-v0.7.0`** (2026-10-10).
 | firmware | **`contracts-v0.7.0`** | current. Nothing it pins moved: `format/v3`, `ble/v1` and `engine/v1` are byte-identical to v0.6.0 |
 | modules | **`contracts-v0.7.0`** | current. The bump moved **no digest** — `boost` still `1f5f8633bcbd5ff8`, the set `808292016d9d2937` — which is evidence `modgen` and the server's `internal/modules` still agree on the §7 rule rather than only with each other |
 | dashboard | `contracts-v0.6.0` | **one behind, on purpose.** Its `bootId → tripId` rename is uncommitted across twenty files; the pin should move with that work, not ahead of it |
-| iOS app | `contracts-v0.6.0` | **one behind, on purpose, and this is the important one.** v0.7.0 re-keys a `trip_summary` from `<vehicle_id>:<boot_id>` to `<vehicle_id>:<started_ms>`, which the app does not implement. Worse, **its tests cannot catch that**: it replays `sync/v1/vectors/exchanges.json`, which contains no `trip_summary` payload at all. Bumping the lock would have it *claim* conformance to a protocol whose entity identity it gets wrong, while CI stayed green. The pin moves with the fix |
+| iOS app | **`contracts-v0.7.0`** | current. **This row said the pin was held, and that reasoning was wrong.** The app never consumes a `sync/v1` `trip_summary` entity — its trips come from a store snapshot, and the only relations it queries are `drive_summary`, `position` and `boost`. So the re-keying cannot reach it and `store/v1.4` is additive. The real gap is a product one, filed as [iOS #40](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/40): the Trips tab still shows per-boot **drives**, so one errand still appears as several trips |
 
-Three of five moved to `contracts-v0.7.0` on 2026-10-10; the two that did not are held for stated
-reasons rather than drifting. `tools/cmd/pin-dashboard` counts how many releases each pin is
+Four of five moved to `contracts-v0.7.0` on 2026-10-10. Only the dashboard is behind, and for a
+stated reason rather than by drifting. `tools/cmd/pin-dashboard` counts how many releases each pin is
 behind, because a stale pin was otherwise invisible — and a **deliberately** held pin has to be
 explained here, or the next person reads it as neglect and bumps it.
 

@@ -254,7 +254,7 @@ tagged across a half-landed rename (Phase 36 item 1).
 |---|---|
 | Every component states its channel, version and commit, and the two ends of the chain agree on `v0.1.0` | **A bundle has not moved between this firmware and this server.** The BLE pairing now fails on the dongle, so the offload path is untested since 2026-10-06 |
 | The public Funnel ingress reaches the server: from outside the tailnet, `cairn.fable-minnow.ts.net:8443` answers with the real `CN=cairn.alpina.casa` certificate from `Cairn Private CA` | The LTE uplink with these builds. It is scheduled on the device, not driven from here |
-| The store serves real data through the new trip keying: 2 trips, 1,256 positions, 572 OBD rows, 3 metric samples | A drive. Phase 27's gate is still open and no release has met it |
+| The store serves real data through the new trip keying: 2 trips, 1,256 positions, 572 OBD rows, 3 metric samples | A drive **on these builds**. One happened on 2026-10-09 and proved the trip dates, but it predates both releases and left OBD density open — so Phase 27's gate is still open and no release has met it |
 | The snapshot restore-tested before the install, and the install kept the previous binaries as `.prev` | A rollback. The mechanism exists and has never been used in anger |
 
 The iOS app is the first component in the project to carry a version, a channel and its own

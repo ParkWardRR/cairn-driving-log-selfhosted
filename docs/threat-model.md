@@ -229,15 +229,38 @@ format or the app; a preview that shows the recipient's view; default-private be
 fresh share exports the least it can); and an independent review of the draft against this
 table.
 
-## Planned: the networked dongle (Wi-Fi and LTE)
+## The networked dongle (Wi-Fi and LTE) — shipped, with its mitigations unfinished
 
-> **Planned, not shipped.** The owner decided on 2026-10-05 that the dongle gets Wi-Fi and LTE
-> back, alongside BLE ([issue 19](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/issues/19)).
-> Everything above this section is true of the **shipped** firmware, which has no network stack and
-> holds no network credential; it stays as written until the firmware that changes it ships. This
-> section is the model that firmware must meet **before** it ships, in the same way the sharing
-> section below was written before any sharing design. Status of every mitigation here is
-> **planned**; none is implemented, and those the issue did not already name (for example joining only networks the dongle was given, a PIN-locked capped SIM, an LTE-only modem) are the author's proposals for the review to accept or change. Protocol: [`uplink/v1`](../contracts/uplink/v1/spec.md) (draft).
+> **Updated 2026-10-10. This section used to be headed "Planned" and said the shipped firmware has
+> no network stack and holds no network credential. Both halves of that are now false**, and a threat
+> model that calls shipped behaviour planned invites a reader to discount it.
+>
+> What actually shipped, on the car's own unit: the **LTE** uplink carried a whole trip unattended on
+> 2026-10-07 (1,295,714 B, TLS on the ESP32, through a public Tailscale Funnel ingress), and the
+> **Wi-Fi** uplink delivered four bundles over mTLS the same day. Wi-Fi is gated off in production
+> because it cannot associate while the BLE controller is initialised
+> ([firmware #31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31)), so LTE
+> carries the data. The dongle therefore **does** hold network credentials, in **plaintext flash**
+> (the gitignored `include/secrets.h`).
+>
+> **The residual risk, stated plainly:** a flash dump permits uploading *as* this device and reading
+> what it uploads. It does **not** permit deleting anything, because a prune requires a
+> server-signed receipt verified on-device. That was a knowing trade — shipping beat the credential
+> gate — and not an oversight; see
+> [ROADMAP § Direction changes](../ROADMAP.md#direction-changes-dated).
+>
+> **The mitigations below are still mostly unimplemented**, and that is the gap this section now
+> documents rather than hides. The one that must be settled before the rest can be written is where
+> the credential key lives between boots
+> ([firmware #18](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/18)); eFuse flash
+> and NVS encryption are **ruled out** on this silicon, so no mitigation here may assume them.
+> Mitigations the decision record did not name (joining only networks the dongle was given, a
+> PIN-locked capped SIM, an LTE-only modem) remain the author's proposals for review.
+>
+> One server-side change belongs here too: the `:8443` ingest listener now binds **loopback only**,
+> with `tailscaled` holding the tailnet address and forwarding to it, so there is no longer a
+> LAN-reachable ingest port. Protocol: [`uplink/v1`](../contracts/uplink/v1/spec.md) (draft, and the
+> firmware still uploads through the legacy device listener).
 > Tracking: [issue 23](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/issues/23).
 
 ### Rule zero: encrypt first

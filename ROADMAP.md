@@ -626,17 +626,20 @@ unit.* Until one is chosen, no `stable` train can be cut.
 
 A repository does not copy a contract; it pins a release by tag **and** commit in
 `contracts.lock` and fetches that, so a contract change cannot reach an implementation
-unnoticed. The latest release is **`contracts-v0.6.0`**.
+unnoticed. The latest release is **`contracts-v0.7.0`** (2026-10-10).
 
-> **`main` is one change ahead of that tag, and every consumer therefore pins a contract older
-> than the store that answers it.** `a trip is an outing, not a power cycle`
-> ([485ae9a](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/commit/485ae9a)) took
-> `store/v1` to **`store/v1.4`** by adding the `v_trip_leg` view — purely additive, so a
-> `v0.6.0` pin is still *satisfied*. On 2026-10-10 the server's own
-> `go run ./cmd/dump-schema` produced a file **byte-identical** to the committed
-> `contracts/store/v1/schema.json`, so the contract and its implementation agree; the only
-> thing missing is a tag, and [tagging a release is a maintainer's decision](#decisions),
-> never CI's. The live table is generated into the
+> **`contracts-v0.7.0` was cut on 2026-10-10 with the owner's go-ahead, and all five consumers
+> are now behind it.** It carries two things from `a trip is an outing, not a power cycle`
+> ([485ae9a](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/commit/485ae9a)):
+> `store/v1.4`, which adds the `v_trip_leg` view and is purely additive; and a **breaking**
+> `sync/v1` change, re-keying a `trip_summary` entity from `<vehicle_id>:<boot_id>` to
+> `<vehicle_id>:<started_ms>` with `driving_ms` and `leg_count` added. `sync/v1` is still
+> draft, which is what permits that.
+>
+> **The `sync/v1` vectors do not cover `trip_summary`**, so a consumer that only replays them
+> will not notice the re-keying — the iOS app is exactly such a consumer, and its tests will
+> stay green while its trip identity is wrong. The
+> [changelog entry](contracts/CHANGELOG.md) names what each consumer has to do. The live table is generated into the
 [README](README.md) by `tools/cmd/pin-dashboard`.
 
 | Repository | Pinned to | Note |

@@ -5,21 +5,73 @@ publishes. Protocol directories are versioned independently of the collection ta
 
 ## Unreleased
 
-**`store/v1.4` is on `main` and in no tag.** `a trip is an outing, not a power cycle`
-([485ae9a](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/commit/485ae9a)) added
-the `v_trip_leg` view and moved `store_contract` to `store/v1.4`. The change is purely
-additive — no relation was removed and no column changed type — so a consumer pinning
-`contracts-v0.6.0` is still satisfied.
+Nothing yet.
 
-What it means in practice: a **trip** is now the whole outing, and a **leg** is one power
-cycle within it. `v_trip_summary` is keyed on the trip; `v_trip_leg` is how the boots that
-made it up are still reachable.
+## 0.7.0 (2026-10-10)
 
-The server already serves it (`internal/tsdb.StoreContract = "store/v1.4"`), and on
-2026-10-10 `go run ./cmd/dump-schema` against the live code path produced a file
-**byte-identical** to the one committed here — so the contract and its implementation agree
-and the only thing missing is a tag. Until one is cut, every consumer pins a contract older
-than the store that answers them.
+**A trip is an outing, not a power cycle.** One behavioural change to `sync/v1` and one
+additive change to `store/v1`, both from
+[485ae9a](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/commit/485ae9a). The
+contract had been ahead of its newest tag since 2026-10-09, so every consumer was pinning a
+contract older than the server answering it; this tag closes that.
+
+### `sync/v1` — **breaking, and `sync/v1` is still draft**
+
+A `trip_summary` entity's id changes from `<vehicle_id>:<boot_id>` to
+`<vehicle_id>:<started_ms>`, and two fields are added: `driving_ms` and `leg_count`.
+
+A boot is an artifact of when the car cut power to the dongle, not a fact about the driving,
+and keying on it failed in both directions at once: a shop stop that switches the ignition off
+started a new boot, so one errand published as several trips; and two drives inside one boot
+published as a single trip whose span covered the stop between them. Measured on a real errand
+— home, Trader Joe's, Pavillions, home — that produced two entities, one of which claimed
+seven hours.
+
+So a trip is an **outing**: consecutive drives merged across any stop shorter than the
+producer's threshold (20 minutes in the reference implementation). `duration_ms` is the
+wall-clock span including those stops, `driving_ms` counts only the moving parts, `leg_count`
+says how many drives the outing contains, and `boot_id` is still published — it is the boot the
+trip started in — but it is no longer the identity.
+
+**Two things a consumer must now handle**, both consequences of a trip being derived rather
+than declared:
+
+- **An entity can be re-keyed.** A bundle covering an earlier part of the same outing arriving
+  late moves the trip's start earlier, and it is republished under a new id. The old id is
+  stale rather than contradicted, so a consumer keeping both shows one trip twice. Reconciling
+  by `(vehicle_id, overlapping span)` rather than by id alone is the safe read.
+- **A trip can absorb a later one.** If the gap between two published trips turns out to be
+  shorter than the threshold once the data falling in it arrives, they become one trip under
+  the earlier id.
+
+> **The vectors do not cover `trip_summary`.** `sync/v1/vectors/exchanges.json` exercises the
+> exchange mechanics — push, pull, ack, request signing — and contains no `trip_summary`
+> payload, so **a consumer that only replays the vectors will not notice this change**. The
+> iOS app is exactly such a consumer. Read the spec section, not the vectors, when adopting
+> this tag. Nothing in the vectors contradicts the new spec, which is what makes the tag
+> consumable.
+
+### `store/v1` — additive, `store/v1.3` → **`store/v1.4`**
+
+Adds the `v_trip_leg` view: one row per leg of a trip, carrying `vehicle_id`, `started_at`,
+`closed_at` and `boot_id`, so the boots that make up an outing stay reachable now that
+`v_trip_summary` is keyed on the trip. No relation was removed and no column changed type, so a
+consumer pinning `contracts-v0.6.0` was still *satisfied* by the running store — it simply
+could not see the new view.
+
+Verified on 2026-10-10: `go run ./cmd/dump-schema` in `cairn-vehicle-server`, against the live
+code path, produced a file **byte-identical** to the `schema.json` committed here. The contract
+and its implementation agree.
+
+### Adopting it
+
+| Consumer | What this tag changes for it |
+|---|---|
+| server | Already implements both halves (`internal/tsdb.StoreContract = "store/v1.4"`, trip-keyed `trip_summary`). The pin bump records what is already true |
+| dashboard | Its `storeContract` test can now see `v_trip_leg`; its own `bootId → tripId` rename is the matching work and is not yet landed |
+| iOS | **Read the `sync/v1` note above.** It replays the exchange vectors, which do not cover `trip_summary`, so its tests will stay green while its trip identity is wrong |
+| firmware | Nothing. It pins `format/v3` and `ble/v1`, neither of which moved |
+| modules | Nothing. `module/v1` is byte-identical to v0.6.0 |
 
 ## 0.6.0 (2026-10-09)
 

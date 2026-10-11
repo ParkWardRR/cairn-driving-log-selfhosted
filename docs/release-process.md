@@ -241,7 +241,7 @@ train yet, and the difference matters: the gates above are a property of a train
 |---|---|---|---|---|---|
 | [iOS app](https://github.com/ParkWardRR/cairn-ios-companion-app) | **0.1.0 (11)** | `stable` | 2026-10-10 | `75f545d` | TestFlight, uploaded through Xcode's account session. Internal testers get it on processing; external distribution needs the build assigned to the external group in App Store Connect, which requires Beta App Review |
 | [server](https://github.com/ParkWardRR/cairn-vehicle-server) | **v0.1.0** | `stable` | 2026-10-10 | `fc86c63` | Deployed to the live host from a clean export of the tag, after a snapshot that restore-tested. `/healthz` and `/v1/health` both report `version v0.1.0, channel stable` |
-| [firmware](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | **v0.1.0** | `stable` | 2026-10-10 | `26acdbb` | Flashed to the car's dongle over the cable, NVS backed up first. The boot banner reads `Cairn cairn-v0.1.0 (stable), policy v1, commit 26acdbbab48c58c7` |
+| [firmware](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | **v0.1.3** | `stable` | 2026-10-10 | `6d42713` | Flashed to the car's dongle over the cable, NVS backed up before each flash. Four releases that evening: v0.1.0 the identity, **v0.1.1** a failed pairing recovering its stale bond inside the post-boot window, **v0.1.2** the last `WRITE_AUTHEN` that Just Works can never satisfy, **v0.1.3** a failed pairing that reports the security state it reached. Each one verified on the unit, which is what the channel is for |
 | dashboard, modules | — | — | — | — | Never tagged. Deployed from a working tree |
 
 The dashboard is the one deployed component with no version, and it is blocked rather than
@@ -252,7 +252,7 @@ tagged across a half-landed rename (Phase 36 item 1).
 
 | Proven on 2026-10-10 | Not proven |
 |---|---|
-| Every component states its channel, version and commit, and the two ends of the chain agree on `v0.1.0` | **A bundle has not moved between this firmware and this server.** The BLE pairing now fails on the dongle, so the offload path is untested since 2026-10-06 |
+| Every component states its channel, version and commit, and the chain agrees on `v0.1.x` | **A bundle has not moved between this firmware and this server.** BLE pairing does not complete; the dongle-side lockout was fixed in v0.1.1 and the remaining fault is on the central — see [firmware #44](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/44) |
 | The public Funnel ingress reaches the server: from outside the tailnet, `cairn.fable-minnow.ts.net:8443` answers with the real `CN=cairn.alpina.casa` certificate from `Cairn Private CA` | The LTE uplink with these builds. It is scheduled on the device, not driven from here |
 | The store serves real data through the new trip keying: 2 trips, 1,256 positions, 572 OBD rows, 3 metric samples | A drive **on these builds**. One happened on 2026-10-09 and proved the trip dates, but it predates both releases and left OBD density open — so Phase 27's gate is still open and no release has met it |
 | The snapshot restore-tested before the install, and the install kept the previous binaries as `.prev` | A rollback. The mechanism exists and has never been used in anger |

@@ -323,13 +323,13 @@ The current pins, generated from each repository's lock files by
 [`tools/cmd/pin-dashboard`](tools/README.md) (a weekly workflow opens a pull request when they drift):
 
 <!-- pins:start -->
-| Repository | Contracts it is pinned to | Behind | Protocols | Also pinned |
-|---|---|---|---|---|
-| [cairn-vehicle-server](https://github.com/ParkWardRR/cairn-vehicle-server) | `contracts-v0.6.0` (`888608a`) | current | ble v1, enrolment v1, format v3, module v1, store v1, sync v1 | firmware `f71355e` (interop) |
-| [cairn-vehicle-web-dashboard](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard) | `contracts-v0.6.0` (`888608a`) | current | store v1 | vehicle server `b0deb01` |
-| [cairn-esp32-device-firmware](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | `contracts-v0.6.0` (`888608a`) | current | ble v1, engine v1, enrolment v1, format v3 | none |
-| [cairn-ios-companion-app](https://github.com/ParkWardRR/cairn-ios-companion-app) | `contracts-v0.6.0` (`888608a`) | current | ble v1, enrolment v1, format v3, sync v1 | none |
-| [cairn-modules](https://github.com/ParkWardRR/cairn-modules) | `contracts-v0.6.0` (`888608a`) | current | engine v1, module v1, store v1 | none |
+| Repository | Contracts it is pinned to | Protocols | Also pinned |
+|---|---|---|---|
+| [cairn-vehicle-server](https://github.com/ParkWardRR/cairn-vehicle-server) | `contracts-v0.7.0` (`8a34291`) | ble v1, enrolment v1, format v3, module v1, store v1, sync v1 | firmware `f71355e` (interop) |
+| [cairn-vehicle-web-dashboard](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard) | `contracts-v0.6.0` (`888608a`) | store v1 | vehicle server `b0deb01` |
+| [cairn-esp32-device-firmware](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | `contracts-v0.7.0` (`8a34291`) | ble v1, engine v1, enrolment v1, format v3 | none |
+| [cairn-ios-companion-app](https://github.com/ParkWardRR/cairn-ios-companion-app) | `contracts-v0.7.0` (`8a34291`) | ble v1, enrolment v1, format v3, sync v1 | none |
+| [cairn-modules](https://github.com/ParkWardRR/cairn-modules) | `contracts-v0.7.0` (`8a34291`) | engine v1, module v1, store v1 | none |
 <!-- pins:end -->
 
 <sub><b>Behind</b> counts the releases cut after each pin, from this repository's own tags, so a stale pin is a decision

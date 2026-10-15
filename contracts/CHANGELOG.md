@@ -12,7 +12,7 @@ publishes. Protocol directories are versioned independently of the collection ta
   served this since 2026-10-14; this entry catches `schema.json` up.
 - **`store/v1.6`**: the view **`v_position_trusted`** — every `position` column plus a boolean
   `trusted`, false for a GNSS fix the car's own accelerometer or physics contradicts: a speed
-  of 8 m/s or more while the IMU stays under 35 mg RMS either side, or a speed that changes by
+  of 8 m/s or more while the IMU drops under 35 mg RMS in the second or any of the three either side, or a speed that changes by
   more than 10 m/s² between fixes at most 2 s apart. The raw rows stay in `position`;
   `v_trip_leg` and `v_trip_summary` now read the trusted ones, so a receiver's phantom run no
   longer opens a leg, adds distance or sets a trip's max speed.

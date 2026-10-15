@@ -626,8 +626,14 @@ unit.* Until one is chosen, no `stable` train can be cut.
 
 A repository does not copy a contract; it pins a release by tag **and** commit in
 `contracts.lock` and fetches that, so a contract change cannot reach an implementation
-unnoticed. The latest release is **`contracts-v0.7.0`** (2026-10-10).
+unnoticed. The latest release is **`contracts-v0.8.0`** (2026-10-15).
 
+> **`contracts-v0.8.0` (2026-10-15) is `store/v1.6` and nothing else**: the `v_position_trusted` view,
+> and `schema.json` catching up with `max_gap_ms` (`store/v1.5`). Only the dashboard pins it, because
+> it is the only consumer that reads the store; the others are one behind and nothing they use moved.
+> Found on the 2026-10-14 evening drive, where 37 fixes after the car had parked drew a spur at the
+> end of the trip — see the [changelog entry](contracts/CHANGELOG.md).
+>
 > **`contracts-v0.7.0` was cut on 2026-10-10 with the owner's go-ahead, and all five consumers
 > are now behind it.** It carries two things from `a trip is an outing, not a power cycle`
 > ([485ae9a](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/commit/485ae9a)):
@@ -644,14 +650,13 @@ unnoticed. The latest release is **`contracts-v0.7.0`** (2026-10-10).
 
 | Repository | Pinned to | Note |
 |---|---|---|
-| server | **`contracts-v0.7.0`** | current. It implemented both halves of v0.7.0 before the tag existed, so the bump records what was already true |
-| firmware | **`contracts-v0.7.0`** | current. Nothing it pins moved: `format/v3`, `ble/v1` and `engine/v1` are byte-identical to v0.6.0 |
-| modules | **`contracts-v0.7.0`** | current. The bump moved **no digest** — `boost` still `1f5f8633bcbd5ff8`, the set `808292016d9d2937` — which is evidence `modgen` and the server's `internal/modules` still agree on the §7 rule rather than only with each other |
-| dashboard | `contracts-v0.6.0` | **one behind, on purpose.** Its `bootId → tripId` rename is uncommitted across twenty files; the pin should move with that work, not ahead of it |
-| iOS app | **`contracts-v0.7.0`** | current. **This row said the pin was held, and that reasoning was wrong.** The app never consumes a `sync/v1` `trip_summary` entity — its trips come from a store snapshot, and the only relations it queries are `drive_summary`, `position` and `boost`. So the re-keying cannot reach it and `store/v1.4` is additive. The real gap is a product one, filed as [iOS #40](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/40): the Trips tab still shows per-boot **drives**, so one errand still appears as several trips |
+| server | `contracts-v0.7.0` | one behind, and nothing it pins moved in v0.8.0 (`store/v1.6` is additive). It implemented both halves of v0.7.0 before the tag existed, so the bump records what was already true |
+| firmware | `contracts-v0.7.0` | one behind, and nothing it pins moved in v0.8.0 (`store/v1.6` is additive). Nothing it pins moved: `format/v3`, `ble/v1` and `engine/v1` are byte-identical to v0.6.0 |
+| modules | `contracts-v0.7.0` | one behind, and nothing it pins moved in v0.8.0 (`store/v1.6` is additive). The bump moved **no digest** — `boost` still `1f5f8633bcbd5ff8`, the set `808292016d9d2937` — which is evidence `modgen` and the server's `internal/modules` still agree on the §7 rule rather than only with each other |
+| dashboard | **`contracts-v0.8.0`** | current. It moved straight from `contracts-v0.6.0` (skipping `0.7.0`, whose `sync/v1` break it never consumed) once its trip-keyed code had landed and it needed `v_position_trusted` |
+| iOS app | `contracts-v0.7.0` | one behind, and nothing it pins moved in v0.8.0. **This row said the pin was held, and that reasoning was wrong.** The app never consumes a `sync/v1` `trip_summary` entity — its trips come from a store snapshot, and the only relations it queries are `drive_summary`, `position` and `boost`. So the re-keying cannot reach it and `store/v1.4` is additive. The real gap is a product one, filed as [iOS #40](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/40): the Trips tab still shows per-boot **drives**, so one errand still appears as several trips |
 
-Four of five moved to `contracts-v0.7.0` on 2026-10-10. Only the dashboard is behind, and for a
-stated reason rather than by drifting. `tools/cmd/pin-dashboard` counts how many releases each pin is
+Four of five moved to `contracts-v0.7.0` on 2026-10-10 and the dashboard to `contracts-v0.8.0` on 2026-10-15. `tools/cmd/pin-dashboard` counts how many releases each pin is
 behind, because a stale pin was otherwise invisible — and a **deliberately** held pin has to be
 explained here, or the next person reads it as neglect and bumps it.
 

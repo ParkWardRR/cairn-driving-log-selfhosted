@@ -5,6 +5,15 @@ publishes. Protocol directories are versioned independently of the collection ta
 
 ## Unreleased
 
+Nothing yet.
+
+## 0.8.0 (2026-10-15)
+
+**A GNSS fix the car contradicts is no longer a fix.** One additive change to `store/v1`, cut with
+the owner's go-ahead so the dashboard can pin a contract that declares the view it now reads.
+`format/v3`, `enrolment/v1`, `sync/v1`, `ble/v1`, `engine/v1` and `module/v1` are byte-identical to
+`contracts-v0.7.0`, so a consumer that pins none of `store/v1` has nothing to do.
+
 ### `store/v1` — additive, `store/v1.4` → **`store/v1.6`**
 
 - **`store/v1.5`**: `max_gap_ms` on `v_drive_summary` and `v_trip_summary` — the longest silence

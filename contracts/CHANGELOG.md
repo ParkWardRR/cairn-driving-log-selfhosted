@@ -5,7 +5,24 @@ publishes. Protocol directories are versioned independently of the collection ta
 
 ## Unreleased
 
-Nothing yet.
+### `store/v1` — additive, `store/v1.4` → **`store/v1.6`**
+
+- **`store/v1.5`**: `max_gap_ms` on `v_drive_summary` and `v_trip_summary` — the longest silence
+  between GNSS fixes, so a consumer can flag a trip with incomplete coverage. The server has
+  served this since 2026-10-14; this entry catches `schema.json` up.
+- **`store/v1.6`**: the view **`v_position_trusted`** — every `position` column plus a boolean
+  `trusted`, false for a GNSS fix the car's own accelerometer or physics contradicts: a speed
+  of 8 m/s or more while the IMU stays under 35 mg RMS either side, or a speed that changes by
+  more than 10 m/s² between fixes at most 2 s apart. The raw rows stay in `position`;
+  `v_trip_leg` and `v_trip_summary` now read the trusted ones, so a receiver's phantom run no
+  longer opens a leg, adds distance or sets a trip's max speed.
+
+  Found on the 2026-10-14 evening drive: 37 fixes after the car had parked traced a 2.7 km run
+  at 33–49 m/s while OBD read 0–3 kph and the IMU sat at its 8–9 mg idle floor. The run was
+  internally consistent, so a speed-from-positions check could not see it. A consumer that draws
+  a GNSS track should read `v_position_trusted WHERE trusted` rather than `position`.
+
+  `schema.json` is regenerated at `store/v1.6` with `go run ./cmd/dump-schema`.
 
 ## 0.7.0 (2026-10-10)
 

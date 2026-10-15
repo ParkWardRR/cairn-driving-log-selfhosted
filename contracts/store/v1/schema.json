@@ -1,6 +1,6 @@
 {
   "contract": "store/v1",
-  "store_contract": "store/v1.4",
+  "store_contract": "store/v1.6",
   "tables": {
     "boost": {
       "columns": [
@@ -747,6 +747,10 @@
           "type": "HUGEINT"
         },
         {
+          "name": "max_gap_ms",
+          "type": "UINTEGER"
+        },
+        {
           "name": "warnings",
           "type": "VARCHAR"
         }
@@ -869,6 +873,94 @@
         {
           "name": "started_at",
           "type": "TIMESTAMP"
+        }
+      ]
+    },
+    "v_position_trusted": {
+      "columns": [
+        {
+          "name": "vehicle_id",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "content_root",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "boot_id",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "mono_ms",
+          "type": "UINTEGER"
+        },
+        {
+          "name": "seq",
+          "type": "UINTEGER"
+        },
+        {
+          "name": "observed_at",
+          "type": "TIMESTAMP"
+        },
+        {
+          "name": "lat",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "lon",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "alt_m",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "speed_mps",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "heading_deg",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "fix_type",
+          "type": "UTINYINT"
+        },
+        {
+          "name": "sats_used",
+          "type": "SMALLINT"
+        },
+        {
+          "name": "sats_visible",
+          "type": "SMALLINT"
+        },
+        {
+          "name": "hdop",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "h_acc_m",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "v_acc_m",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "utc_acc_ms",
+          "type": "INTEGER"
+        },
+        {
+          "name": "source_flags",
+          "type": "UTINYINT"
+        },
+        {
+          "name": "frame_flags",
+          "type": "USMALLINT"
+        },
+        {
+          "name": "trusted",
+          "type": "BOOLEAN"
         }
       ]
     },
@@ -1309,6 +1401,10 @@
         {
           "name": "gap_duration_ms",
           "type": "HUGEINT"
+        },
+        {
+          "name": "max_gap_ms",
+          "type": "UINTEGER"
         },
         {
           "name": "bundle_ids",

@@ -290,6 +290,7 @@ produced its numbers.
 | Repo | Required | Issue |
 |---|---|---|
 | firmware | ~~Confirm the UTC basis survives a resume and is anchored at monotonic zero~~ — **done on the 2026-10-09 drive** | [#38](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/38), closed |
+| firmware | **Flash `f940c84` (or later) and drive it.** It vets every GNSS fix against OBD speed, the IMU and physics (the 2026-10-14 drive ended in 37 phantom fixes after parking), carries the UTC basis across bundle seals (12 of that drive's 37 bundles were 1970), stamps frames with their sample time, and seals a capture left by an earlier boot instead of mixing two clocks in one bundle. Host-tested; the lifecycle half needs the drive. The drive confirms: no `GNSS fix refused` storm on clean roads, every bundle dated, one `boot_id` per clock | [firmware #53](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/53) |
 | firmware | Confirm OBD density on a build carrying `416c457` (the batch-parse fix landed *after* the 2026-10-09 drive, which still showed ~23 s gaps). Bench power cannot exercise it (`obd=absent`) | [#37](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/37), [#42](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/42) |
 | firmware | ~~Move the engine-profile stamp to manifest key 29~~ — **written, and accepted by the server on the 2026-10-09 drive.** What remains is that nothing can *read* it: the store's `bundles` relation has no `firmware_version` or `engine_profile_*` column, so add them (server) and show them (dashboard) | [#39](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/39), [dashboard #14](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/issues/14) |
 | firmware | Establish which PIDs this DME really answers and record the set in `docs/`. `BOOST_CONTROL` (0x70) reports `support=1` and returns `NO DATA`; ethanol content (0x51/0x52) is unconfirmed | Phase 13 |
@@ -629,8 +630,8 @@ A repository does not copy a contract; it pins a release by tag **and** commit i
 unnoticed. The latest release is **`contracts-v0.8.0`** (2026-10-15).
 
 > **`contracts-v0.8.0` (2026-10-15) is `store/v1.6` and nothing else**: the `v_position_trusted` view,
-> and `schema.json` catching up with `max_gap_ms` (`store/v1.5`). Only the dashboard pins it, because
-> it is the only consumer that reads the store; the others are one behind and nothing they use moved.
+> and `schema.json` catching up with `max_gap_ms` (`store/v1.5`). **All five consumers pin it** (2026-10-15):
+> the dashboard because it reads the view; the others record that nothing they use moved.
 > Found on the 2026-10-14 evening drive, where 37 fixes after the car had parked drew a spur at the
 > end of the trip — see the [changelog entry](contracts/CHANGELOG.md).
 >
@@ -650,13 +651,13 @@ unnoticed. The latest release is **`contracts-v0.8.0`** (2026-10-15).
 
 | Repository | Pinned to | Note |
 |---|---|---|
-| server | `contracts-v0.7.0` | one behind, and nothing it pins moved in v0.8.0 (`store/v1.6` is additive). It implemented both halves of v0.7.0 before the tag existed, so the bump records what was already true |
-| firmware | `contracts-v0.7.0` | one behind, and nothing it pins moved in v0.8.0 (`store/v1.6` is additive). Nothing it pins moved: `format/v3`, `ble/v1` and `engine/v1` are byte-identical to v0.6.0 |
-| modules | `contracts-v0.7.0` | one behind, and nothing it pins moved in v0.8.0 (`store/v1.6` is additive). The bump moved **no digest** — `boost` still `1f5f8633bcbd5ff8`, the set `808292016d9d2937` — which is evidence `modgen` and the server's `internal/modules` still agree on the §7 rule rather than only with each other |
+| server | **`contracts-v0.8.0`** | current. `store/v1.6` is this server's own schema; the pin had been two minors behind what it served |
+| firmware | **`contracts-v0.8.0`** | current. Nothing it pins moved: `format/v3`, `enrolment/v1`, `ble/v1` and `engine/v1` are byte-identical to v0.7.0 |
+| modules | **`contracts-v0.8.0`** | current. The bump moved **no digest** — `boost` still `1f5f8633bcbd5ff8` — and `store/v1.6` is additive |
 | dashboard | **`contracts-v0.8.0`** | current. It moved straight from `contracts-v0.6.0` (skipping `0.7.0`, whose `sync/v1` break it never consumed) once its trip-keyed code had landed and it needed `v_position_trusted` |
-| iOS app | `contracts-v0.7.0` | one behind, and nothing it pins moved in v0.8.0. **This row said the pin was held, and that reasoning was wrong.** The app never consumes a `sync/v1` `trip_summary` entity — its trips come from a store snapshot, and the only relations it queries are `drive_summary`, `position` and `boost`. So the re-keying cannot reach it and `store/v1.4` is additive. The real gap is a product one, filed as [iOS #40](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/40): the Trips tab still shows per-boot **drives**, so one errand still appears as several trips |
+| iOS app | **`contracts-v0.8.0`** | current. Nothing it pins moved. The open gap is a product one, [iOS #40](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/40): the Trips tab still shows per-boot **drives**, so one errand still appears as several trips |
 
-Four of five moved to `contracts-v0.7.0` on 2026-10-10 and the dashboard to `contracts-v0.8.0` on 2026-10-15. `tools/cmd/pin-dashboard` counts how many releases each pin is
+Four of five moved to `contracts-v0.7.0` on 2026-10-10; all five moved to `contracts-v0.8.0` on 2026-10-15. `tools/cmd/pin-dashboard` counts how many releases each pin is
 behind, because a stale pin was otherwise invisible — and a **deliberately** held pin has to be
 explained here, or the next person reads it as neglect and bumps it.
 

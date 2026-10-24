@@ -16,11 +16,12 @@
 <p align="center"><strong>One roadmap for all six repositories: where the project has been, where it is going, and what each repository has to do next.</strong></p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/reviewed-2026--10--10-2E86C1?style=flat-square" alt="Reviewed 2026-10-10">
+  <img src="https://img.shields.io/badge/reviewed-2026--10--24-2E86C1?style=flat-square" alt="Reviewed 2026-10-24">
   <img src="https://img.shields.io/badge/architecture-v3-2E86C1?style=flat-square" alt="Architecture v3">
-  <img src="https://img.shields.io/badge/contracts-v0.6.0-2E86C1?style=flat-square" alt="contracts-v0.6.0">
+  <img src="https://img.shields.io/badge/contracts-v0.8.0-2E86C1?style=flat-square" alt="contracts-v0.8.0">
   <img src="https://img.shields.io/badge/transports-BLE_·_LTE_proven-27AE60?style=flat-square" alt="BLE and LTE proven on hardware">
   <img src="https://img.shields.io/badge/first_trips-carried_2026--10--06-27AE60?style=flat-square" alt="First trips carried 2026-10-06">
+  <img src="https://img.shields.io/badge/uploads-blocked_since_2026--10--23-C0392B?style=flat-square" alt="Uploads blocked since 2026-10-23">
 </p>
 
 > **This is the only roadmap in the project.** No repository keeps its own. A repository's
@@ -78,14 +79,22 @@ flowchart LR
 
 | # | Phase | One drive away? | Blocked on |
 |---|---|---|---|
-| **27** | [A trip you can trust](#phase-27--a-trip-you-can-trust--in-progress) | **Yes.** Dates are proven; OBD density and the engine stamp are not | One drive on a build carrying `416c457`, then a store column for the stamp |
-| **36** | [Two channels: beta and stable](#phase-36--two-channels-beta-and-stable--planned) | No | The dashboard's `bootId → tripId` rename landing; then its own work |
-| **28** | [The networked dongle, finished](#phase-28--the-networked-dongle-finished--in-progress) | No | BLE/Wi-Fi coexistence, a PKI decision, a config contract |
+| **27** | [A trip you can trust](#phase-27--a-trip-you-can-trust--in-progress) | **Yes.** Firmware `6e62b44` is on the dongle (flashed 2026-10-23) and has not been driven. [What that drive must show](#what-the-next-drive-must-show) | The drive; its bundles come off by SD card until an upload path works ([firmware #55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55)); then a store column for the engine stamp |
+| **36** | [Two channels: beta and stable](#phase-36--two-channels-beta-and-stable--planned) | No | Its own work. The dashboard's `bootId → tripId` rename, which blocked it, landed 2026-10-15 |
+| **28** | [The networked dongle, finished](#phase-28--the-networked-dongle-finished--in-progress) | No | **An upload path at all** (Wi-Fi `AUTH_FAIL` at the router, LTE registration denied — [firmware #55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55)), OTA, a PKI decision, a config contract |
 | **29** | [The phone becomes the app](#phase-29--the-phone-becomes-the-app--in-progress) | No | CoreBluetooth offload wiring, an enrolment screen |
 | **M3–M4** | [Modules reach the store and the web](#m1m7--the-module-system--in-progress) | No | Module views, `v_metric_samples`, a web consumer |
 
 Everything else — insight, sharing, data control, chip hardening — is real work with issues
 filed, sequenced [below](#next-phases-per-repository) behind these.
+
+**As of 2026-10-23 no path carries a bundle off the car.** Wi-Fi association to the home network
+fails at the router (`AUTH_FAIL`, `HANDSHAKE_TIMEOUT`) with credentials that match, after working
+until 2026-10-15; LTE registration is denied by the network; and BLE offload to a Mac cannot hold
+the link. There is no OTA either, so every firmware change goes over USB. The workaround is the SD
+card, read on a Mac and pushed with the server's `cairn-push` over device mTLS. This does not stop
+Phase 27 — a drive is judged from its bundles, however they arrive — but it is now the first thing
+Phase 28 has to fix ([firmware #55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55)).
 
 **Phase 36 was added on 2026-10-10** and runs beside the others rather than after them: much of
 the project is Built and unproven, and today there is no way to ship it as such. It also
@@ -114,7 +123,9 @@ The original single repository is preserved read-only as
 
 | What | Evidence |
 |---|---|
-| **Capture, seal, encrypted storage** | **Firmware v0.1.3, channel `stable`, commit `6d42713`, flashed 2026-10-10** and confirmed by the boot banner on the unit (four releases that evening; see [the release record](docs/release-process.md#what-has-actually-been-released)). The car's dongle (ESP32-D0WDQ6 rev v1.0) records GNSS, IMU and OBD into AEAD-encrypted append-only segments and seals signed v3 bundles. Every frame encrypted; the card is a cache of ciphertext |
+| **Capture, seal, encrypted storage** | **Firmware v0.1.3, channel `stable`, commit `6d42713`, flashed 2026-10-10** and confirmed by the boot banner on the unit (four releases that evening; see [the release record](docs/release-process.md#what-has-actually-been-released)). The car's dongle (ESP32-D0WDQ6 rev v1.0) records GNSS, IMU and OBD into AEAD-encrypted append-only segments and seals signed v3 bundles. Every frame encrypted; the card is a cache of ciphertext. The unit has since run later builds and now carries **`6e62b44` (channel `beta`, flashed 2026-10-23)**, which is [Built, not Proven](#built-not-yet-proven) |
+| **Trusted positions and dated bundles, in the store** | **2026-10-15, server `88795b7` deployed.** `v_position_trusted` (`store/v1.6`) drops GNSS fixes the IMU, OBD speed or physics contradicts, and legs and trip summaries are built from it — after the 2026-10-14 drive ended in 37 phantom fixes that drew a 2.7 km spur. Bundles the firmware sealed with no UTC basis are dated at build time from the agreeing basis of their own boot: **27 repaired**. Server CI on `main` green again since 2026-10-15, after being red since 2026-10-13 |
+| **Everything per trip, in the dashboard** | **2026-10-15, dashboard `ee66412` deployed.** A trip that spans several boots gets one set of charts, stops, GPS comparison, marks and statistics on one clock; tracks read only trusted fixes; a trip ends at its last fix (the end-of-trip bug is fixed). The acceptance suite is green |
 | **Enrolment and key escrow** | The real device's sealed enrolment blob was unsealed by the server and its storage root escrowed as version 1, byte-identical to the Go reference. The dongle is assigned to the 428i |
 | **The BLE offload chain** | 2026-10-06: nine bundles pulled over BLE in 62 s, nine receipts verified against the firmware-pinned key **on the device**, nine bundles pruned. Carried by `cmd/cairn-phone`, the Go reference phone, on macOS |
 | **Wi-Fi uplink** | 2026-10-07: four bundles delivered over mTLS and pruned on verified receipts (`env:cairn-wifiup`) |
@@ -123,7 +134,7 @@ The original single repository is preserved read-only as
 | **TLS verification, from the failing side** | `env:cairn-tlsneg` pins a wrong CA and the handshake is **rejected** (NOT_TRUSTED, `-0x2700`) while the correct CA verifies. Server side: no client certificate → refused; the right CommonName from an untrusted CA → refused, because identity rests on the chain and not the name |
 | **The server, deployed** | **v0.1.0, channel `stable`, commit `fc86c63`, 2026-10-10**, installed from a clean export of the tag after a snapshot that restore-tested. Intake, receipts, escrow, vehicle and counter binding, the app API, the local admin API, the in-memory analytical store. The ledger of the first nine trips reads `offered → committed → receipt_issued → decode_queued`, every one `"path":"ble-relay"` |
 | **The dashboard, deployed** | Every route authenticated by **both** passkeys and Tailnet identity; period statistics; bookmarks, tags, notes and search; the Phones page with QR enrolment and revocation; device-vs-phone GPS comparison; backup and restore; trip images |
-| **The iPhone app, on a device** | **TestFlight 0.1.0 (11), channel `stable`, commit `75f545d`, 2026-10-10** — the project's first tagged component release, and the first build that can name its own channel and commit. Before it, build 10. The BLE link and bond reuse across dongle reboots, one-QR setup, the Trips tab with route maps, the CarPlay car screen signed and running on hardware, passkey sign-in to the dashboard from Settings |
+| **The iPhone app, on a device** | **TestFlight 0.1.0 (11), channel `stable`, commit `75f545d`, 2026-10-10** — the project's first tagged component release, and the first build that can name its own channel and commit. Before it, build 10. The BLE link and bond reuse across dongle reboots, one-QR setup, the Trips tab with route maps, the CarPlay car screen signed and running on hardware, passkey sign-in to the dashboard from Settings. The UI-test CI job on the Mac runner is green again at `26379c6` (2026-10-15), after failing since 2026-10-13 on a stale result bundle |
 | **A trip with a real date** | **2026-10-09.** Two bundles carry real 2026 timestamps and `reproduced: true`, where all fifteen earlier trips decoded to 1970-01-01. `time_obs` held 8 GNSS observations with none marked `adopted`, so the basis was already established when they were recorded — the CRC'd sidecar surviving the power cut, which is the thing that could only be proven by driving. The live store now holds one 1970 trip (the legacy bundles) and one dated `2026-10-09T03:28:16Z` |
 | **Snapshot and restore** | A cold snapshot of the server's state, restored into a scratch stack and booted — as a CI job and as the last step of every deploy |
 
@@ -131,8 +142,11 @@ The original single repository is preserved read-only as
 
 | What | What is missing |
 |---|---|
-| Secure OTA | The install path is written and host-verified; it has never run on the dongle ([firmware #11](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/11)) |
-| The OBD-sampling fix | The UTC-basis half is **proven** — see the drive below — so this row is now only about OBD density. The batch-parse root cause was found after that drive and fixed in `416c457`: `cairn_engine_batch_parse` demanded the full byte count *and* the PIDs in request order, so a reply carrying five of six, or carrying them reordered, was discarded entirely and the cycle fell back to six sequential requests. Unverified on a drive ([firmware #37](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/37), [#42](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/42)) |
+| **Drive capture, rebuilt** — firmware `6e62b44` | **Flashed 2026-10-23, not yet driven.** Between 2026-10-15 and 2026-10-23 the dongle lost almost every drive: one 22.8 h boot saw five drives and recorded one trip, 8 s long. The co-processor link was shared, unlocked, between two tasks, so about half the supply readings came back garbled while driving; the engine-on dwell never completed, the OBD bus never opened, and the start score sat at 1.00 against a threshold of 1.50 with GNSS speed alone — and smooth driving ended the few trips that did start. Fixed with a link mutex, a supply reading sampled by the task that owns the link and cached for the others, and a new trip detector: a debounced rail, a running engine as evidence, start hysteresis, and positive evidence required to stop. Host-tested (22 checks, replaying the lost drive); the link race and OBD answering need the road ([firmware #54](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/54)) |
+| **GNSS plausibility gate** — firmware `2d262f9` | Every fix is vetted against the IMU, OBD speed, physics and satellite settling before it is written, after 37 phantom fixes on 2026-10-14 drew a 2.7 km spur once the car had parked. The server already filters the same fixes out of the store (see [Proven](#proven-on-hardware-or-in-the-live-deployment)); the firmware half has not met a drive ([firmware #53](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/53)) |
+| **Dating every bundle in a boot** — firmware `2d262f9`, `f940c84` | The UTC basis is carried across bundle seals (12 of the 37 bundles of 2026-10-14 were dated 1970), frames are stamped at sample time, and a capture left open by an earlier boot is sealed at boot instead of being extended under a second clock. The server repairs the old bundles at build time; the firmware fix needs a drive ([firmware #53](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/53)) |
+| Secure OTA | The install path is written and host-verified; it has never run on the dongle ([firmware #11](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/11)). Until it does, every firmware change needs the dongle on USB |
+| The OBD-sampling fix | The UTC-basis half is **proven** — see the drive below — so this row is now only about OBD density. The batch-parse root cause was found after that drive and fixed in `416c457`: `cairn_engine_batch_parse` demanded the full byte count *and* the PIDs in request order, so a reply carrying five of six, or carrying them reordered, was discarded entirely and the cycle fell back to six sequential requests. Unverified on a drive, and no drive between 2026-10-15 and 2026-10-23 opened the OBD bus at all — see the first row ([firmware #37](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/37), [#42](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/42)) |
 | Check-in, the config receiver, the uplink manager, the digest generator | Host-tested in the firmware; not all wired into the production build |
 | `sync/v1` on the phone | The server implements it and publishes 83 exchange vectors. The app's client is built and vector-checked, but no screen drives enrolment ([iOS #18](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/18), [#31](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/31)) |
 | Module derivations | `boost.boost_psi` is a real module-owned column in the server. No module view, metric or named query exists yet |
@@ -180,6 +194,11 @@ open; `beta-ok` means it ships in `beta` and the feature it touches stays out of
 
 | Repo | Issue | Defect | Severity | State |
 |---|---|---|---|---|
+| firmware | [#55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55) | **No path uploads a bundle from the car** (found 2026-10-23). Wi-Fi association to the home network fails at the router — `AUTH_FAIL`, `HANDSHAKE_TIMEOUT` — although the compiled credentials match, after working until 2026-10-15; LTE registration is denied by the network (SIM or plan); BLE offload to a Mac cannot hold the link | `blocker` | Open. **Workaround:** read the SD card on a Mac and push with the server's `cairn-push` over device mTLS. Not the coexistence failure of [#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31): that one is worked around, and `AUTH_FAIL` is the access point refusing |
+| firmware | [#11](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/11) | **No OTA on the dongle**, so every firmware change needs it on USB — which is how `6e62b44` reached it on 2026-10-23 | `blocker` | Open. The install path is written and host-verified, never run on hardware |
+| firmware | [PR #54](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/54) | **Drives were lost 2026-10-15 → 2026-10-23.** The co-processor link was shared unlocked between two tasks; garbled supply readings (about half of them while driving) kept the engine-on dwell from completing, so the OBD bus never opened, the start score stayed at 1.00 < 1.50 on GNSS alone, and smooth driving ended trips after seconds — one 8 s trip from five drives in a 22.8 h boot | `blocker`, cleared by the drive gate | **Fixed, not proven.** `6e62b44`: a link mutex, a cached supply reading sampled by the owning task, and a new trip detector (debounced rail, engine-running evidence, start hysteresis, positive stop evidence). Flashed 2026-10-23, not yet driven |
+| server | — | **Old bundles can name the wrong boot.** Bundles written by firmware before `f940c84` can carry a later boot's clock under an earlier `boot_id`; one trip in the live store reports the wrong boot | `known` | A data leftover, not a live defect: `f940c84` seals a capture from an earlier boot at boot instead of extending it. The affected bundles are sealed and are not rewritten (invariant 1) |
+| firmware | [PR #53](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/53) | **Phantom GNSS fixes after parking, and 1970 bundles within a dated boot** — the 2026-10-14 drive: 37 fixes after the car stopped drew a 2.7 km spur, and 12 of its 37 bundles were dated 1970 | `blocker`, cleared by the drive gate | **Repaired in the store, built in the firmware.** Live since 2026-10-15: `v_position_trusted` filters the fixes for legs and trip summaries (server `120cc05`, `a5512e5`), build-time dating repaired 27 bundles (server `939ad85`), and dashboard tracks read trusted fixes (`c118199`). The firmware fix (`2d262f9`, `f940c84`) stops them at the source and has not been driven |
 | firmware | [#44](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/44) | **BLE pairing does not complete**, so no bundle can be offloaded to the phone | `blocker` | **Half fixed, and narrowed to the central.** The dongle-side lockout is closed in v0.1.1: its own disconnect returned reason 534, which was not in `onDisconnect`'s peer-lost-keys list, so a stale bond was never dropped and every retry failed identically. v0.1.3's instrumentation then gave the remaining state: `[enc=0 auth=0 bonded=0 keysize=0 mtu=185]` with 0 bonds — everything zero on a healthy link, yet `onAuthenticationComplete` fired, which NimBLE only does on an encryption-change event. So the central begins a security procedure that yields nothing: it believes it holds a key the dongle does not have. Ruled out: a stale bond here, a leftover `WRITE_AUTHEN` (fixed in v0.1.2, failure unchanged), placement (RSSI −85, as in the 2026-10-06 success) and NimBLE starvation. Settling it needs a second central — the iPhone app — or clearing this Mac's `bluetoothd` state |
 | deployment | — | **Stopping `cairn-server` let `tailscaled` take the ingest port, and the server could then never restart.** Found 2026-10-10 by a `--snapshot` deploy, which stops the unit for the copy: `tailscale serve --tcp 8443` claims `100.122.47.33:8443` the moment it is free, and `cairn-server` binding the wildcard `:8443` then fails `address already in use` — a crash loop every 5 s. Prod ingest was down for about two minutes | `known`, fixed | **Fixed.** The server now binds `127.0.0.1:8443`, which is exactly where tailscaled's own config forwards (`tcp://localhost:8443`), so the two no longer compete. Verified from outside the tailnet. **Consequence to know: LAN ingest on `:8443` is gone**, which costs nothing today because the Wi-Fi uplink is gated off ([#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31)) and the phone relay uses `:8444`. Re-enabling Wi-Fi needs the LAN address back, and `-addr` takes one value |
 | firmware | [#39](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/39) | A bundle did not record which engine profile produced it | `blocker`, cleared by the drive gate | **Half done, and the visible half is missing.** The seal stamps the profile into `firmware_version` (31 of 32 bytes used) *and* writes manifest key 29, which the server accepted on the 2026-10-09 drive. But **the analytical store exposes neither**: `bundles` has no `firmware_version` and no `engine_profile_*` column (checked 2026-10-10), so no query and no page can answer which profile produced a trip. That is what closing this needs, with [dashboard #14](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/issues/14) |
@@ -188,7 +207,7 @@ open; `beta-ok` means it ships in `beta` and the feature it touches stays out of
 | firmware | [#34](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/34) | A Wi-Fi slot is never announced to the phone, and the check-in is a no-op | `beta-ok` | Open. Both are unreleased `ble/v1` fields |
 | firmware | [#33](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/33) | Static DRAM is the binding constraint; the remaining manifest buffers need a platform alloc shim | `known` | Open |
 | firmware | [#32](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/32) | Lowering `CAIRN_MAX_CHUNKS` strands already-sealed bundles; one 1.17 MB bundle is stranded now | `known` | Open. The constant is part of the on-card compatibility surface: raise freely, lower only knowing what is already sealed |
-| firmware | [#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31) | Wi-Fi cannot associate while the BLE controller is initialised — `HANDSHAKE_TIMEOUT` after 25 s, measured three times | `beta-ok` | Open. Wi-Fi is gated off in production and LTE carries the data |
+| firmware | [#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31) | Wi-Fi cannot associate while the BLE controller is initialised — `HANDSHAKE_TIMEOUT` after 25 s, measured three times | `beta-ok` | **Worked around 2026-10-14** in `2e06252`: the slot stops the BLE controller with `deinit(false)`, which keeps the GATT objects and so avoids the `deinit(true)` panic, and the commit records three bundles delivered over Wi-Fi. Open until a drive shows it repeatedly. Wi-Fi fails again since 2026-10-15 for a different reason — [#55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55) |
 | firmware | [#6](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/6) | A Wi-Fi password may remain readable in the dongle's flash | `blocker` | Open. Rotate, erase or encrypt |
 | firmware | [#5](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/5) | The local BLE passkey is weak, and a session is not authenticated by an enrolled challenge | `blocker` | Open. The shipping pairing (MITM + DISPLAY_ONLY) must be restored with it |
 | server | [#42](https://github.com/ParkWardRR/cairn-vehicle-server/issues/42) | `cairn-phone` nil-pointer dereference during BLE service discovery | `beta-ok` | Open — recovered at runtime, still a defect |
@@ -283,29 +302,58 @@ the remaining ~23 s gaps are the DME going quiet rather than the firmware blocki
 stamp is written but invisible: the store has no column for it. So one criterion down, three to
 go, and this phase needs **another** drive — on a build that includes `416c457`.
 
+**The 2026-10-14 drive found two more ways a trip lies, and the next week lost the drives
+outright.** That evening's trip ended in 37 GNSS fixes recorded after the car had parked — a
+2.7 km spur — and 12 of its 37 bundles were dated 1970 although the boot had a basis. The store
+now refuses those fixes and dates those bundles (live 2026-10-15); the firmware fix is
+[#53](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/53). Then, from 2026-10-15 to
+2026-10-23, the dongle recorded almost nothing: garbled supply readings on an unlocked serial link
+kept the OBD bus shut and the start score below threshold, so five drives in one boot produced a
+single 8 s trip ([#54](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/54)). Both
+fixes are in `6e62b44`, flashed over USB on 2026-10-23 and **not yet driven**.
+
 **Closes when:** one drive produces a trip with a correct date, OBD coverage proportional to its
 duration, a distance that matches the route, and a manifest naming the engine profile that
 produced its numbers.
 
+### What the next drive must show
+
+One ordinary drive on `6e62b44`, its bundles read off the SD card and pushed with `cairn-push`
+until an upload path works again ([firmware #55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55)).
+Each line is checked in the store, not in the serial log:
+
+| Must show | Proves | Failed by |
+|---|---|---|
+| **One trip per drive**, starting within about 30 s of pulling away and ending at the park — not split by lights, start-stop or a smooth stretch | The new trip detector ([#54](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/54)) | 2026-10-15 → 23: one 8 s trip from five drives |
+| **OBD rows from the start of the trip**, at a density proportional to its duration | The link mutex and cached supply reading open the bus ([#54](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/54)); the batch-parse fix `416c457` ([#37](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/37), [#42](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/42)) | 2026-10-15 → 23: 11 s of OBD in a 22.8 h boot; 2026-10-07: 766 s of 1002 s empty |
+| **No bundle dated 1970** | The UTC basis carried across seals ([#53](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/53)) | 2026-10-14: 12 of 37 bundles |
+| **One clock per bundle** — every bundle's frames belong to the `boot_id` it names | A capture from an earlier boot sealed at boot, not extended (`f940c84`) | Pre-`f940c84` bundles: a later boot's clock under an earlier `boot_id` |
+| **GNSS refusals only when warranted** — none, or a handful during satellite settling, on clean roads; the post-parking fixes refused | The firmware plausibility gate ([#53](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/53)), cross-checked against the server's `v_position_trusted`, which should then find nothing left to drop | 2026-10-14: 37 phantom fixes, a 2.7 km spur |
+
 | Repo | Required | Issue |
 |---|---|---|
 | firmware | ~~Confirm the UTC basis survives a resume and is anchored at monotonic zero~~ — **done on the 2026-10-09 drive** | [#38](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/38), closed |
-| firmware | **Flash `f940c84` (or later) and drive it.** It vets every GNSS fix against OBD speed, the IMU and physics (the 2026-10-14 drive ended in 37 phantom fixes after parking), carries the UTC basis across bundle seals (12 of that drive's 37 bundles were 1970), stamps frames with their sample time, and seals a capture left by an earlier boot instead of mixing two clocks in one bundle. Host-tested; the lifecycle half needs the drive. The drive confirms: no `GNSS fix refused` storm on clean roads, every bundle dated, one `boot_id` per clock | [firmware #53](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/53) |
+| firmware | ~~Flash `f940c84` (or later)~~ — **`6e62b44` flashed over USB 2026-10-23**, carrying both the GNSS gate and dating of [#53](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/53) and the rebuilt drive capture of [#54](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/54). **Now drive it** and check it against [the list above](#what-the-next-drive-must-show) | [firmware #53](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/53), [#54](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/54) |
+| firmware | Restore an upload path: Wi-Fi `AUTH_FAIL` at the router, LTE registration denied. Not needed to *judge* the drive — the card carries it — but needed for any drive after | [firmware #55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55) |
 | firmware | Confirm OBD density on a build carrying `416c457` (the batch-parse fix landed *after* the 2026-10-09 drive, which still showed ~23 s gaps). Bench power cannot exercise it (`obd=absent`) | [#37](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/37), [#42](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/42) |
 | firmware | ~~Move the engine-profile stamp to manifest key 29~~ — **written, and accepted by the server on the 2026-10-09 drive.** What remains is that nothing can *read* it: the store's `bundles` relation has no `firmware_version` or `engine_profile_*` column, so add them (server) and show them (dashboard) | [#39](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/39), [dashboard #14](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/issues/14) |
 | firmware | Establish which PIDs this DME really answers and record the set in `docs/`. `BOOST_CONTROL` (0x70) reports `support=1` and returns `NO DATA`; ethanol content (0x51/0x52) is unconfirmed | Phase 13 |
 | firmware | **Pedal position.** `throttle_pct` is PID 0x11, the throttle *plate* angle: on this drive-by-wire N20 it read 32–34% during the one confirmed 8.6 psi boost event, so wide-open throttle is not identifiable from it. 0x49/0x4A are in the `pidtest` probe list, not in the profile | [#27](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/27) |
 | firmware | Write `UTC_SYNC` from a client so the phone time source stops being wired-and-unexercised. `cairn-phone` is the cheap way to test it without a drive | — |
-| server | Nothing new. `v_trip_summary`'s 5 s gap filter is correct — the missing fixes were the bug, not the filter | — |
-| dashboard | Confirm the trip page shows a real date, and the GPS-compare panel against **real** phone rows | [#14](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/issues/14) |
+| server | ~~Refuse phantom fixes and date basis-less bundles~~ — **live 2026-10-15** (`88795b7`): `v_position_trusted` feeds legs and trip summaries, and 27 bundles were dated from their boot's agreeing basis. `v_trip_summary`'s 5 s gap filter stays correct — the missing fixes were the bug, not the filter | — |
+| dashboard | Confirm the trip page shows a real date, and the GPS-compare panel against **real** phone rows. Since 2026-10-15 (`ee66412`) a multi-boot trip is one page on one clock and tracks read only trusted fixes, so the next drive should show as one trip end to end | [#14](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/issues/14) |
 | iOS | Drive with the app armed, so the phone's GPS lands in a recorded trip for the first time | — |
-| front door | Nothing. The contract work — `TIME_OBSERVATION`, manifest key 29, `pedal_pct` — shipped in `contracts-v0.5.0` | — |
+| front door | Nothing. The contract work — `TIME_OBSERVATION`, manifest key 29, `pedal_pct` — shipped in `contracts-v0.5.0`, and `v_position_trusted` in `contracts-v0.8.0` | — |
 
 ## Phase 28 — The networked dongle, finished — **in progress**
 
-The dongle is a network device: LTE carries bundles unattended, and Wi-Fi is proven in a
-dedicated environment. Three things keep it from being finished — Wi-Fi cannot coexist with BLE,
-the network credentials sit in plaintext flash, and nothing a user sets can reach the device.
+The dongle is a network device: LTE carried bundles unattended on 2026-10-07, and Wi-Fi is proven
+in a dedicated environment. Three things kept it from being finished — Wi-Fi could not coexist
+with BLE, the network credentials sit in plaintext flash, and nothing a user sets can reach the
+device. **Since 2026-10-23 there is a fourth, ahead of them: neither radio uploads at all**
+([firmware #55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55)), and with no
+OTA ([firmware #11](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/11)) every
+attempt at a fix is another USB flash.
 
 **Closes when:** a user can add a Wi-Fi network and a monthly data cap from the web UI or the
 phone, the dongle receives both sealed to its own key, enforces the cap, and uses whichever
@@ -313,7 +361,8 @@ transport is available — without a credential being readable from a flash dump
 
 | Repo | Required | Issue |
 |---|---|---|
-| firmware | **Wi-Fi/BLE coexistence.** `NimBLEDevice::deinit(true)` lets Wi-Fi associate, but the next scan panics `InstrFetchProhibited` at PC 0. Needs a safe NimBLE teardown, or a Wi-Fi slot scheduled where BLE is already down (the standby path) | [#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31) |
+| firmware | **An upload path, first.** As of 2026-10-23 none works: Wi-Fi association fails at the router with `AUTH_FAIL` / `HANDSHAKE_TIMEOUT` on matching credentials (it worked until 2026-10-15), and LTE registration is denied by the network — a SIM or plan question before it is a firmware one. Until then bundles leave on the SD card | [#55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55) |
+| firmware | **Wi-Fi/BLE coexistence.** `NimBLEDevice::deinit(true)` let Wi-Fi associate, but the next scan panicked `InstrFetchProhibited` at PC 0. **Worked around 2026-10-14** (`2e06252`): `deinit(false)` stops the controller and keeps the GATT objects, and Wi-Fi delivered bundles with BLE re-initialising cleanly. Built; a drive has to show it holds | [#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31) |
 | firmware | **Where the credential key lives between boots.** RAM-only costs autonomy; NVS re-creates the plaintext secret under another name; an unwrap over the bonded BLE link has no wire format, replay rule or no-phone-for-a-week recovery yet | [#18](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/18) |
 | firmware | Rotate or erase the residual Wi-Fi password in flash | [#6](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/6) |
 | firmware | LTE data accounting and limits, enforced on the dongle: daily, monthly and per-trip caps, roaming, pause | [#21](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/21) |
@@ -558,7 +607,7 @@ afterwards on the right stretch, carrying the telemetry that was actually live a
 
 The owner's read of 2026-10-10: *the project got further, faster, than intended, and parts of it
 are rough.* That is accurate and this document already says so — the
-[Built, not yet proven](#built-not-yet-proven) list is six entries long. What is missing is any
+[Built, not yet proven](#built-not-yet-proven) list was six entries long that day. What is missing is any
 way to **act** on it. There is no tag on any component, no artifact anyone can install, and
 `deploy-v3.sh` ships the working tree, so uncommitted code can reach the machine the car uploads
 to. Rough and finished arrive together with nothing telling them apart.
@@ -583,14 +632,16 @@ hardware, and no open `blocker` defect.
 command naming its channel, and the thing that decides whether a feature is in `stable` is its
 recorded evidence rather than anyone's memory.
 
-**Order matters here, and the first item is not optional.** The server has landed
+**Order mattered here, and the first item was not optional.** The server landed
 `trip_summary` keyed on the trip (75ed973) while the dashboard's matching `bootId → tripId`
-rename sits uncommitted across twenty files. Nothing can be tagged across a half-landed rename.
+rename sat uncommitted across twenty files, and nothing can be tagged across a half-landed
+rename. **That rename landed on 2026-10-14 and 2026-10-15** (`e3222f5` → `e7ddd66`, the
+acceptance suite green), so item 1 no longer blocks the rest.
 
 | # | Repo | Required | Issue |
 |---|---|---|---|
-| 1 | dashboard | Land the `bootId → tripId` rename and get the server and dashboard agreeing in CI | — |
-| 2 | **all five** | Make every component state its own identity: version, channel and commit on `/healthz`, in the UI footer, in the firmware banner, and in a bundle's stamp | **iOS, server and firmware done 2026-10-10.** iOS: `BuildIdentity` in CairnCore, in Settings → About. Server: `buildinfo.Channel` on `/healthz` and `/v1/health`. Firmware: `scripts/build_identity.py` supplies the commit and dirty defines `device_info.cpp` had always read and no build ever passed, and the version is `cairn-v0.1.0` (was `cairn-v2.0.0` while the format was v3). **Dashboard outstanding**, behind item 1 |
+| 1 | dashboard | ~~Land the `bootId → tripId` rename and get the server and dashboard agreeing in CI~~ | **done 2026-10-15** — trip-based routing (`e3222f5`), the move finished and the acceptance suite green (`e7ddd66`), and multi-boot trips on one clock (`ee66412`) |
+| 2 | **all five** | Make every component state its own identity: version, channel and commit on `/healthz`, in the UI footer, in the firmware banner, and in a bundle's stamp | **iOS, server and firmware done 2026-10-10.** iOS: `BuildIdentity` in CairnCore, in Settings → About. Server: `buildinfo.Channel` on `/healthz` and `/v1/health`. Firmware: `scripts/build_identity.py` supplies the commit and dirty defines `device_info.cpp` had always read and no build ever passed, and the version is `cairn-v0.1.0` (was `cairn-v2.0.0` while the format was v3). **Dashboard outstanding**; item 1, which held it, is done |
 | 3 | front door | `contracts/release/v1`: the feature registry, its schema and vectors. Then triage every user-facing surface into `proven` / `built` / `designed`, with named evidence or none | — |
 | 4 | front door | Severity on every open defect (done in this document), and the rule that `stable` ships with no `blocker` | — |
 | 5 | dashboard | `NUXT_CHANNEL`, a `useFeature()` composable, and **404 in `stable`** for a beta-only route — a page that half works is worse than one that is absent | — |
@@ -657,7 +708,7 @@ unnoticed. The latest release is **`contracts-v0.8.0`** (2026-10-15).
 | dashboard | **`contracts-v0.8.0`** | current. It moved straight from `contracts-v0.6.0` (skipping `0.7.0`, whose `sync/v1` break it never consumed) once its trip-keyed code had landed and it needed `v_position_trusted` |
 | iOS app | **`contracts-v0.8.0`** | current. Nothing it pins moved. The open gap is a product one, [iOS #40](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/40): the Trips tab still shows per-boot **drives**, so one errand still appears as several trips |
 
-Four of five moved to `contracts-v0.7.0` on 2026-10-10; all five moved to `contracts-v0.8.0` on 2026-10-15. `tools/cmd/pin-dashboard` counts how many releases each pin is
+Four of five moved to `contracts-v0.7.0` on 2026-10-10; all five moved to `contracts-v0.8.0` on 2026-10-15, and are still there on 2026-10-24 (no contract release since). `tools/cmd/pin-dashboard` counts how many releases each pin is
 behind, because a stale pin was otherwise invisible — and a **deliberately** held pin has to be
 explained here, or the next person reads it as neglect and bumps it.
 

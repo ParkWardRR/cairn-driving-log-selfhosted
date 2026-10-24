@@ -142,9 +142,13 @@ digest-only transport never frees the card. The volume turns out not to need com
 is about 230 KB, so a 2 GB plan carries some nine thousand of them, and sealed segments are AEAD
 ciphertext that `gzip -9` only reduces to 90% of raw anyway.
 
-Wi-Fi is implemented and proven, but switched off in the production build: it cannot associate
-while the BLE controller is initialised
-([firmware #31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31)). See
+Wi-Fi is implemented and proven, and has been switched on in the production build since
+2026-10-14, when stopping the BLE controller for the slot got around the coexistence failure
+([firmware #31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31)).
+**Since 2026-10-23, though, neither radio uploads:** Wi-Fi association fails at the home router
+(`AUTH_FAIL`) and LTE registration is denied by the network
+([firmware #55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55)). Until that
+is fixed, bundles leave the car on the SD card. See
 [Roadmap](#roadmap-in-brief), the [uplink contract](contracts/uplink/v1/README.md), the
 [cellular design](docs/lte-cellular-design.md), and the firmware's
 [uplink status](https://github.com/ParkWardRR/cairn-esp32-device-firmware/blob/main/docs/network-uplink-status.md)
@@ -275,7 +279,7 @@ The split happened on 2026-10-05; the plan and what was executed are in
 A repository does not copy them; it pins a release by tag **and** commit (`contracts.lock`) and
 fetches that, so a change to a contract cannot reach an implementation unnoticed. The collection is
 tagged `contracts-vX.Y.Z` only when contract content changes; the latest is
-**`contracts-v0.6.0`** (2026-10-09), and every consumer is pinned to it
+**`contracts-v0.8.0`** (2026-10-15), and every consumer is pinned to it
 ([changelog](contracts/CHANGELOG.md)). Each protocol directory is versioned independently, and a
 breaking change adds a new directory (`format/v4`) rather than editing an old one.
 
@@ -325,17 +329,17 @@ The current pins, generated from each repository's lock files by
 <!-- pins:start -->
 | Repository | Contracts it is pinned to | Behind | Protocols | Also pinned |
 |---|---|---|---|---|
-| [cairn-vehicle-server](https://github.com/ParkWardRR/cairn-vehicle-server) | `contracts-v0.6.0` (`888608a`) | current | ble v1, enrolment v1, format v3, module v1, store v1, sync v1 | firmware `f71355e` (interop) |
-| [cairn-vehicle-web-dashboard](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard) | `contracts-v0.6.0` (`888608a`) | current | store v1 | vehicle server `b0deb01` |
-| [cairn-esp32-device-firmware](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | `contracts-v0.6.0` (`888608a`) | current | ble v1, engine v1, enrolment v1, format v3 | none |
-| [cairn-ios-companion-app](https://github.com/ParkWardRR/cairn-ios-companion-app) | `contracts-v0.6.0` (`888608a`) | current | ble v1, enrolment v1, format v3, sync v1 | none |
-| [cairn-modules](https://github.com/ParkWardRR/cairn-modules) | `contracts-v0.6.0` (`888608a`) | current | engine v1, module v1, store v1 | none |
+| [cairn-vehicle-server](https://github.com/ParkWardRR/cairn-vehicle-server) | `contracts-v0.8.0` (`412a5ee`) | current | ble v1, enrolment v1, format v3, module v1, store v1, sync v1 | firmware `f71355e` (interop) |
+| [cairn-vehicle-web-dashboard](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard) | `contracts-v0.8.0` (`412a5ee`) | current | store v1 | vehicle server `a5512e5` |
+| [cairn-esp32-device-firmware](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | `contracts-v0.8.0` (`412a5ee`) | current | ble v1, engine v1, enrolment v1, format v3 | none |
+| [cairn-ios-companion-app](https://github.com/ParkWardRR/cairn-ios-companion-app) | `contracts-v0.8.0` (`412a5ee`) | current | ble v1, enrolment v1, format v3, sync v1 | none |
+| [cairn-modules](https://github.com/ParkWardRR/cairn-modules) | `contracts-v0.8.0` (`412a5ee`) | current | engine v1, module v1, store v1 | none |
 <!-- pins:end -->
 
 <sub><b>Behind</b> counts the releases cut after each pin, from this repository's own tags, so a stale pin is a decision
 somebody took rather than something nobody looked at. A pin that is behind is not automatically wrong — a repository
 bumps when it needs the change — but it should be visible either way. Every consumer is on the current release as of
-2026-10-09; what each one actually consumes is in <a href="ROADMAP.md#contract-pins-and-what-a-bump-unblocks">the roadmap</a>.</sub>
+2026-10-15; what each one actually consumes is in <a href="ROADMAP.md#contract-pins-and-what-a-bump-unblocks">the roadmap</a>.</sub>
 
 ## Documentation index
 
@@ -381,16 +385,16 @@ the dashboard's [authentication](https://github.com/ParkWardRR/cairn-vehicle-web
 
 ## Where things stand
 
-Honest status, as of **2026-10-08**, separating what has run on real hardware from what has only
+Honest status, as of **2026-10-24**, separating what has run on real hardware from what has only
 run on a host. The [roadmap](ROADMAP.md#where-cairn-is-today) carries the detail, the evidence for
 each claim, and what closes each open item.
 
 | State | What |
 |---|---|
-| **Proven on hardware or in the live deployment** | Capture, sealing and encrypted storage on the car's dongle. Device enrolment and key escrow, verified against the real device's sealed blob. **All three transports:** the BLE offload chain (2026-10-06 — nine bundles in 62 s, nine receipts verified on the device, nine bundles pruned), Wi-Fi mTLS (2026-10-07 — four bundles delivered and pruned) and **LTE** (2026-10-07 — T-Mobile US through the public Funnel ingress, 158,906 bytes, verified receipt, pruned; then a whole trip unattended at 1.29 MB in 386 s). TLS verification proven from the failing side: a deliberately wrong pinned CA is rejected. The server deployed with intake, receipts, escrow, vehicle and counter binding. The dashboard deployed with every route authenticated, period statistics, search, the Phones page and GPS-source comparison. The iPhone app on TestFlight, with CarPlay signed and running |
-| **Built, not yet proven** | Secure OTA (host-verified; the install has never run on the dongle). The UTC-basis and OBD-sampling fixes — landed, and **one drive away** from confirmation. `sync/v1` on the phone (the client is built and vector-checked; no screen drives enrolment). Module derivations in the server, with no module view, metric or query yet. The phone's own GPS in a real trip: the live store holds **zero** phone positions |
-| **In progress** | [Phase 27](ROADMAP.md#phase-27--a-trip-you-can-trust--in-progress), a trip you can trust: correct dates, OBD coverage proportional to duration, a distance that matches the route. Then [Phase 28](ROADMAP.md#phase-28--the-networked-dongle-finished--in-progress) (Wi-Fi/BLE coexistence, the credential key, data caps the user sets) and [Phase 29](ROADMAP.md#phase-29--the-phone-becomes-the-app--in-progress) (the app replaces the Go reference phone). Tailnet reach: installed, the login approval pending |
-| **Open defects** | Eleven, [all listed](ROADMAP.md#open-defects) — three of them already fixed in code and waiting on a drive, and seven legacy v2 bundles stranded on the card because both ends are now v3 |
+| **Proven on hardware or in the live deployment** | Capture, sealing and encrypted storage on the car's dongle. Device enrolment and key escrow, verified against the real device's sealed blob. **All three transports:** the BLE offload chain (2026-10-06 — nine bundles in 62 s, nine receipts verified on the device, nine bundles pruned), Wi-Fi mTLS (2026-10-07 — four bundles delivered and pruned) and **LTE** (2026-10-07 — T-Mobile US through the public Funnel ingress, 158,906 bytes, verified receipt, pruned; then a whole trip unattended at 1.29 MB in 386 s). TLS verification proven from the failing side: a deliberately wrong pinned CA is rejected. The server deployed with intake, receipts, escrow, vehicle and counter binding, and since 2026-10-15 refusing GNSS fixes the car contradicts (`v_position_trusted`) and dating bundles the dongle sealed without a clock (27 repaired). The dashboard deployed with every route authenticated, period statistics, search, the Phones page and GPS-source comparison, and since 2026-10-15 every page per trip, across boots, on one clock. The iPhone app on TestFlight, with CarPlay signed and running |
+| **Built, not yet proven** | Firmware `6e62b44`, flashed 2026-10-23 and not yet driven: drive capture rebuilt after the dongle lost almost every drive between 2026-10-15 and 2026-10-23, a GNSS plausibility gate, and every bundle in a boot dated. Secure OTA (host-verified; the install has never run on the dongle, so every firmware change needs USB). The OBD-sampling fix — landed, and **one drive away** from confirmation. `sync/v1` on the phone (the client is built and vector-checked; no screen drives enrolment). Module derivations in the server, with no module view, metric or query yet. The phone's own GPS in a real trip: the live store holds **zero** phone positions |
+| **In progress** | [Phase 27](ROADMAP.md#phase-27--a-trip-you-can-trust--in-progress), a trip you can trust: correct dates, OBD coverage proportional to duration, a distance that matches the route. Then [Phase 28](ROADMAP.md#phase-28--the-networked-dongle-finished--in-progress) (an upload path that works again, OTA, the credential key, data caps the user sets) and [Phase 29](ROADMAP.md#phase-29--the-phone-becomes-the-app--in-progress) (the app replaces the Go reference phone). Tailnet reach: installed, the login approval pending |
+| **Open defects** | Eighteen rows, [all listed](ROADMAP.md#open-defects), one of them fixed. The newest is the worst: **since 2026-10-23 no path uploads a bundle from the car** (Wi-Fi refused at the router, LTE registration denied, [firmware #55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55)) and there is no OTA, so bundles leave on the SD card and firmware goes on over USB. Four are fixed or worked around in code and waiting on a drive, and seven legacy v2 bundles are stranded on the card because both ends are now v3 |
 | **Planned** | Insight (a tune record, baselines, a plain health summary), sharing with redaction, the module system reaching the web and the phone, browser-based flashing, a v2 → v3 data migration, and chip hardening on whatever hardware replaces this dongle |
 
 **Hardware constraint.** There is exactly one real dongle, a Freematics ONE+ whose chip is an
@@ -421,8 +425,10 @@ flowchart LR
     p27 --> m3
 ```
 
-Phase 27 is **one drive away**: every fix for the 1970 dates and the starved OBD sampling has
-landed and none of it is verified. Nothing is scheduled ahead of it.
+Phase 27 is **one drive away**: firmware `6e62b44`, flashed 2026-10-23, carries every fix for the
+1970 dates, the phantom GNSS fixes, the starved OBD sampling and the drives lost between
+2026-10-15 and 2026-10-23, and none of it is verified on the road. What that drive must show is
+[listed in the roadmap](ROADMAP.md#what-the-next-drive-must-show). Nothing is scheduled ahead of it.
 
 **Product themes**, in the order the owner chose (it is theirs to change), each additive to the
 contracts and following the contract-first loop:

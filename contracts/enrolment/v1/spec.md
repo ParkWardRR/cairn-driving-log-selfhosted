@@ -79,6 +79,7 @@ ambiguous):
 | `GET enroll_blob` | `@prov ENROLL-BLOB <base64>` or `@prov ERR …` |
 | `SET assignment <vehicle32hex> <assignment32hex>` | `OK` (both non-zero) |
 | `SET counter_floor <n>` | `OK` (decimal u64; only raises) |
+| `SET garage <slot> <vehicle32hex> <assignment32hex> <engine>` | `OK` (slot 0-3; ids non-zero; engine an `engines/` profile id, `[a-z0-9-]`, at most 23 characters; one vehicle and one assignment per slot) |
 | `COMMIT` | `OK`, or `ERR <reason>` (staged values kept; re-send) |
 | `CAIRN-PROV END` | `OK` |
 
@@ -89,6 +90,19 @@ point; a host test asserts it.
 
 A successful `COMMIT` closes the session; the device stays silent about lines
 sent outside one.
+
+**Garage.** A dongle that moves between cars is given one `SET garage` line per car
+(each car's assignment is open on the server at the same time: `cairn-admin assign
+--keep`). Any `SET garage` in a session makes the garage exactly the slots set in that
+session; a slot provisioned again with the same vehicle and assignment keeps the VIN it
+had learned. `SET assignment` in the same session names the car the dongle is in now;
+without one, the installed assignment is kept if it is one of the garage's cars, else the
+first slot's is installed. The device stores a truncated SHA-256 of each car's VIN once
+seen, never the VIN. At runtime it switches to the car its VIN identifies (a learned VIN,
+else the one unbound slot whose engine the VIN names; never a guess between two) and
+seals the open bundle with bundle-region transition `reason_code` 4 (vehicle
+identified). A server files a boot whose bundles name two cars under the car named last
+in it, since unplugging powers the dongle off and a boot is therefore one car.
 
 **Rules.**
 

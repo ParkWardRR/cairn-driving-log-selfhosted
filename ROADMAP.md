@@ -21,7 +21,7 @@
   <img src="https://img.shields.io/badge/contracts-v0.8.0-2E86C1?style=flat-square" alt="contracts-v0.8.0">
   <img src="https://img.shields.io/badge/transports-BLE_·_LTE_proven-27AE60?style=flat-square" alt="BLE and LTE proven on hardware">
   <img src="https://img.shields.io/badge/first_trips-carried_2026--10--06-27AE60?style=flat-square" alt="First trips carried 2026-10-06">
-  <img src="https://img.shields.io/badge/uploads-blocked_since_2026--10--23-C0392B?style=flat-square" alt="Uploads blocked since 2026-10-23">
+  <img src="https://img.shields.io/badge/uploads-LTE_from_the_car_2026--10--24-27AE60?style=flat-square" alt="Uploads over LTE from the car since 2026-10-24">
 </p>
 
 > **This is the only roadmap in the project.** No repository keeps its own. A repository's
@@ -126,7 +126,7 @@ The original single repository is preserved read-only as
 | **Capture, seal, encrypted storage** | **Firmware v0.1.3, channel `stable`, commit `6d42713`, flashed 2026-10-10** and confirmed by the boot banner on the unit (four releases that evening; see [the release record](docs/release-process.md#what-has-actually-been-released)). The car's dongle (ESP32-D0WDQ6 rev v1.0) records GNSS, IMU and OBD into AEAD-encrypted append-only segments and seals signed v3 bundles. Every frame encrypted; the card is a cache of ciphertext. The unit has since run later builds and now carries **`6e62b44` (channel `beta`, flashed 2026-10-23)**, which is [Built, not Proven](#built-not-yet-proven) |
 | **Trusted positions and dated bundles, in the store** | **2026-10-15, server `88795b7` deployed.** `v_position_trusted` (`store/v1.6`) drops GNSS fixes the IMU, OBD speed or physics contradicts, and legs and trip summaries are built from it — after the 2026-10-14 drive ended in 37 phantom fixes that drew a 2.7 km spur. Bundles the firmware sealed with no UTC basis are dated at build time from the agreeing basis of their own boot: **27 repaired**. Server CI on `main` green again since 2026-10-15, after being red since 2026-10-13 |
 | **Everything per trip, in the dashboard** | **2026-10-15, dashboard `ee66412` deployed.** A trip that spans several boots gets one set of charts, stops, GPS comparison, marks and statistics on one clock; tracks read only trusted fixes; a trip ends at its last fix (the end-of-trip bug is fixed). The acceptance suite is green |
-| **Enrolment and key escrow** | The real device's sealed enrolment blob was unsealed by the server and its storage root escrowed as version 1, byte-identical to the Go reference. The dongle is assigned to the 428i |
+| **Enrolment and key escrow** | The real device's sealed enrolment blob was unsealed by the server and its storage root escrowed as version 1, byte-identical to the Go reference. The dongle moves between the 428i and the M240i: a garage of open assignments, one per car, chosen by VIN (enrolment v1 `SET garage`) |
 | **The BLE offload chain** | 2026-10-06: nine bundles pulled over BLE in 62 s, nine receipts verified against the firmware-pinned key **on the device**, nine bundles pruned. Carried by `cmd/cairn-phone`, the Go reference phone, on macOS |
 | **Wi-Fi uplink** | 2026-10-07: four bundles delivered over mTLS and pruned on verified receipts (`env:cairn-wifiup`) |
 | **LTE uplink** | 2026-10-07: attached to T-Mobile US (PLMN 311480, −77 dBm), TLSv1.2 ECDHE-ECDSA-AES128-GCM through the public Funnel ingress in 5.2 s, 158,906 bytes uploaded, receipt verified, bundle pruned. Then a whole trip unattended: 1,295,714 B in 386 s, 0.23% overhead |

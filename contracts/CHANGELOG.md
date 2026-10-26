@@ -5,7 +5,13 @@ publishes. Protocol directories are versioned independently of the collection ta
 
 ## Unreleased
 
-**Where the car was when GNSS could not say, and one dongle for two cars.**
+Nothing yet.
+
+## 0.9.0 (2026-10-26)
+
+**Where the car was when GNSS could not say, and one dongle for two cars.** Cut with the owner's
+go-ahead so the server, dashboard and firmware can pin the `WIFI_SCAN` record and `store/v1.7`.
+`sync/v1`, `ble/v1`, `engine/v1` and `module/v1` are byte-identical to `contracts-v0.8.0`.
 
 ### `format/v3` — additive: record type `0x0C` **`WIFI_SCAN`** (§4.13)
 

@@ -359,7 +359,7 @@ bumps when it needs the change — but it should be visible either way. Every co
 | [docs/lte-cellular-design.md](docs/lte-cellular-design.md) | LTE and cellular connectivity design: hardware, connectivity paths, radio scheduling, data budgets, security boundaries, and privacy constraints |
 | [docs/guarantee-audit.md](docs/guarantee-audit.md) | Every documented guarantee and the test that verifies it, and what is not covered |
 | [docs/repo-split-plan.md](docs/repo-split-plan.md) | The plan, outcome and follow-up issues of splitting the monorepo into these repositories |
-| [docs/trail-device-plan.md](docs/trail-device-plan.md) | The second device: a handheld LILYGO T-Beam Supreme for hiking, walking and dongle-less driving. Hardware, what carries over from the dongle, the carrier question, activities, power, LoRa, the proposed contract changes and five decisions for the owner. **Designed, nothing built** — see the [roadmap](ROADMAP.md#t1t8--the-trail-device--designed) |
+| [docs/trail-device-plan.md](docs/trail-device-plan.md) | The second device: a handheld LILYGO T-Beam Supreme for hiking, walking and dongle-less driving. Hardware, what carries over from the dongle, the carrier question, activities, power, LoRa, the proposed contract changes and five decisions for the owner. **Designed, nothing built** — see the [roadmap](ROADMAP.md#t1t8--the-trail-device--in-progress) |
 | [docs/module-system-plan.md](docs/module-system-plan.md) | The seven-stage plan for separating interpretation (boost, fuel economy, trims, driving style, speedometer check, place kinds) from the GPS-logging core, as modules carrying their dongle, server, web and iOS parts in one package. **M1–M2 done; M3 partly done** — see the [roadmap](ROADMAP.md#m1m7--the-module-system--in-progress) |
 | [tools/README.md](tools/README.md) | The Go tools and scripts this repository still uses, and what each is for |
 
@@ -460,7 +460,7 @@ handheld recorder for hiking and walking, on a LILYGO T-Beam Supreme
 ([cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware),
 [plan](docs/trail-device-plan.md)). It writes the same sealed bundles and reaches the same server;
 what it adds is elevation, steps and a display; its LoRa radio is held off to save battery. Scheduled as
-[T1–T8](ROADMAP.md#t1t8--the-trail-device--designed), beside the dongle's phases and never ahead
+[T1–T8](ROADMAP.md#t1t8--the-trail-device--in-progress), beside the dongle's phases and never ahead
 of them. Nothing is built.
 
 **Where things stand by phase:** the v2 data path (1–12) is complete; the analytical store and the

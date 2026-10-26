@@ -100,7 +100,9 @@ Phase 28 has to fix ([firmware #55](https://github.com/ParkWardRR/cairn-esp32-de
 
 **The trail device was added on 2026-10-25** — a second, handheld recorder for hiking, walking
 and driving without the dongle, in its own repository. It is
-[T1–T8](#t1t8--the-trail-device--designed), it is **Designed, nothing built**, and it is scheduled
+[T1–T8](#t1t8--the-trail-device--in-progress): **T1 is Proven** on the owner's unit (a CSV capture
+logger, `v0.1.0`, with AssistNow, GNSS priming and a Wi-Fi check-in with the server all Proven
+there too), and **T2 — `format/v3` bundles from the device — is next**. It is scheduled
 *beside* these phases, never ahead of them: nothing on the dongle's critical path waits for it,
 and a fix it finds in shared code lands in the dongle first.
 
@@ -290,7 +292,7 @@ independent features. Breaking changes were authorised; v2 is dead.
 | 34 | [Chip hardening on replacement hardware](#phase-34--chip-hardening-on-replacement-hardware--planned-gated) | **planned, gated** |
 | 35 | [Routes, stretches and marking a drive](#phase-35--routes-stretches-and-marking-a-drive--planned-two-decisions-open) | **planned, two decisions open** |
 | 36 | [Two channels: beta and stable](#phase-36--two-channels-beta-and-stable--planned) | **planned** — added 2026-10-10 |
-| T1–T8 | [The trail device](#t1t8--the-trail-device--designed) | **designed** — added 2026-10-25 |
+| T1–T8 | [The trail device](#t1t8--the-trail-device--in-progress) | **in progress** — T1 proven, T2 next (2026-10-26) |
 
 ---
 
@@ -684,7 +686,7 @@ same missing unit since it was written — or **ship `stable` with OTA as a beta
 say in `INSTALL.md` that a stable install is flashed over a cable. *Recommendation: buy the
 unit.* Until one is chosen, no `stable` train can be cut.
 
-## T1–T8 — The trail device — **designed**
+## T1–T8 — The trail device — **in progress**
 
 The owner's request of 2026-10-25: *a physical device for hiking and walking, and sometimes
 driving, without the OBD-II dongle.* The hardware is a **LILYGO T-Beam Supreme** — ESP32-S3,
@@ -703,13 +705,31 @@ choice, 2026-10-25); the dongle's C is not reused, but the emulator's Rust `form
 into a shared `no_std` crate, `cairn-format`, so the emulator becomes shipping code rather than the
 lagging implementation.
 
-**Nothing has started, and five decisions are the owner's**
-([plan §13](docs/trail-device-plan.md#13-decisions-for-the-owner)): the repository name
-(`cairn-trail-device-firmware` was used); the **carrier model** — a `kind` (`car` | `person`) on the
-vehicle registry, so `vehicle_id` keeps its bytes and gains a meaning, *recommended*, against a
-`format/v4`; where `cairn-format` lives — the dongle repository's emulator workspace, *recommended*; whether to
-speak **Meshtastic** — moot while the radio is off; and **buying two boards**, so one can be sacrificed to Secure Boot and
-power-loss-during-OTA, *recommended*.
+**Where it stands (2026-10-26).** T1 is Proven and the device already records every sensor to
+CSV files on its card ([firmware v0.1.0](https://github.com/ParkWardRR/cairn-trail-device-firmware/releases/tag/v0.1.0)).
+Ahead of the plan, and Proven on the owner's unit: u-blox **AssistNow** orbit data loaded from the
+card (109 of 109 messages accepted); **priming** a cold receiver with the last position and the
+RTC's time, believed only once checked; a **Wi-Fi fingerprint** position learned by the device
+from its own fixes and matched offline by k-nearest-neighbours; and **uplink stage 1** — home
+Wi-Fi, TLS 1.3 with the device's client certificate, `GET /api/v2/health` answered `200`. Not yet
+Proven: anything that needs a fix (the board has not had open sky), battery operation, and the
+time to first fix that priming and AssistNow are meant to shorten. Its host tooling is one Rust
+tool, `trail`, by the owner's choice of no Python.
+
+**Decisions** ([plan §13](docs/trail-device-plan.md#13-decisions-for-the-owner)). Made: the
+repository name (`cairn-trail-device-firmware`); Rust on `esp-hal` + Embassy; the LoRa radio held
+off; and, on 2026-10-26, **`cairn-format` lives in the dongle repository's emulator workspace** and
+the trail device pins it by commit, so one Rust implementation serves the emulator and a shipping
+device. Still the owner's: the **carrier model** — a `kind` (`car` | `person`) on the vehicle
+registry, so `vehicle_id` keeps its bytes and gains a meaning, *recommended*, against a
+`format/v4` (needed by T3); and **buying two boards**, so one can be sacrificed to Secure Boot and
+power-loss-during-OTA, *recommended* (needed by T8). Meshtastic is moot while the radio is off.
+
+**A numbering collision to settle before §11 is proposed.** The plan's new record types were
+drafted as `0x0C BARO_SAMPLE`, `0x0D POWER_STATUS` and `0x0E ACTIVITY_SUMMARY`; `contracts-v0.9.0`
+has since given **`0x0C` to `WIFI_SCAN`**. They take the next free numbers when proposed. The trail
+device writes `WIFI_SCAN` as specified — its fingerprint scans are the same evidence the dongle's
+are — rather than a record of its own.
 
 **Closes when:** a hike is recorded on the device with no phone present, reaches the server by
 BLE or home Wi-Fi, is pruned on a verified receipt, and appears on the dashboard as an activity
@@ -718,12 +738,12 @@ the trail — and the battery lasted as long as this section says it would.
 
 | Stage | What | Closes when | State |
 |---|---|---|---|
-| **T1** | **Bring-up.** A Cargo workspace on `esp-hal` + Embassy with the `espup` Xtensa toolchain and `espflash`; an AXP2101 driver enabling every rail; every part answering — M10 over UBX, PPS, QMI8658 on the shared SPI bus beside the SD card, magnetometer, BME280, PCF8563, SH1106; **the SX1262 held off** — its rail disabled or the chip in cold sleep — and never keyed | A full flash backup of the shipped Meshtastic image is taken first; the M10's configuration left by Meshtastic is read and cleared; then a `bringup` build prints a reading from every part, `docs/hardware.md`'s *read off the unit* table is filled in from the board itself, and a meter shows the radio-off current | **designed** |
-| **T2** | **The capture core on the S3.** `cairn-format` extracted from the emulator as a `no_std` + `alloc` crate; the **33 `format/v3` vectors passing on the host and in a self-test build on the board**; keys and the counter in flash through `sequential-storage`; a FAT layer chosen by tearing power mid-seal; GNSS from UBX-NAV-PVT, IMU summaries, baro, power; bundles sealed on the card; `TIME_OBSERVATION` from GNSS and the RTC, with the RTC set from GNSS and refused when its voltage-low flag is set | A walk around the block leaves sealed bundles that the server's structural verifier accepts with no key | **designed** |
+| **T1** | **Bring-up.** A Cargo workspace on `esp-hal` + Embassy with the `espup` Xtensa toolchain and `espflash`; an AXP2101 driver enabling every rail; every part answering — M10 over UBX, PPS, QMI8658 on the shared SPI bus beside the SD card, magnetometer, BME280, PCF8563, SH1106; **the SX1262 held off** — its rail disabled or the chip in cold sleep — and never keyed | A full flash backup of the shipped Meshtastic image is taken first; the M10's configuration left by Meshtastic is read and cleared; then a `bringup` build prints a reading from every part, `docs/hardware.md`'s *read off the unit* table is filled in from the board itself, and a meter shows the radio-off current | **proven** 2026-10-25 except the meter reading: backup taken, M10 reset to defaults every boot, every part read and recorded at rate ([v0.1.0](https://github.com/ParkWardRR/cairn-trail-device-firmware/releases/tag/v0.1.0)); ALDO3 off in every power row, current not yet metered |
+| **T2** | **The capture core on the S3.** `cairn-format` extracted from the emulator as a `no_std` + `alloc` crate; the **33 `format/v3` vectors passing on the host and in a self-test build on the board**; keys and the counter in flash through `sequential-storage`; a FAT layer chosen by tearing power mid-seal; GNSS from UBX-NAV-PVT, IMU summaries, baro, power; bundles sealed on the card; `TIME_OBSERVATION` from GNSS and the RTC, with the RTC set from GNSS and refused when its voltage-low flag is set | A walk around the block leaves sealed bundles that the server's structural verifier accepts with no key | **next** — started 2026-10-26; the RTC rule is already Proven (set only from a GNSS fix or the computer) |
 | **T3** | **Enrolment and the first hike on the dashboard.** `enrolment/v1` over the USB console; a `person` carrier and an assignment on the server; bundles pushed from the card with `cairn-push`; the new record types decoded; a track and a climb in the store | One hike, its date correct, its track trusted, shown on the dashboard | **designed** |
 | **T4** | **Activities.** Start, pause and stop from movement with hysteresis; the mode guess on the device and the decision on the server; marks; the four screens and the button map; the overlap link to a dongle trip | A day with a walk, a drive and a hike shows three activities of the right kinds, and every mark on the right spot | **designed** |
 | **T5** | **Battery life.** M10 power-save, light sleep between samples, deep sleep on a timer or button (the IMU interrupt is on GPIO 33, which cannot wake the S3 from deep sleep), batched card writes, display timeout, seal-before-flat | **Measured with a meter:** ≥ 24 h of 1 Hz on-foot recording and ≥ 5 days in endurance mode on a 3000 mAh 18650 — or the numbers it does reach, written here. Other firmware sets the bar: ~105 mA for the board with the M10 tracking (SoftRF) means the 24 h target needs receiver power save; ~1.45 mA in deep sleep (LilyGO) is the floor | **designed** |
-| **T6** | **The ways home.** `ble/v1` offload through the phone (and `cmd/cairn-phone` until the app carries bundles); **`uplink/v1` over home Wi-Fi as its first implementer**; the receipt-gated prune | A bundle leaves by BLE and another by Wi-Fi, each pruned on a receipt verified on the device | **designed** |
+| **T6** | **The ways home.** `ble/v1` offload through the phone (and `cmd/cairn-phone` until the app carries bundles); **`uplink/v1` over home Wi-Fi as its first implementer**; the receipt-gated prune | A bundle leaves by BLE and another by Wi-Fi, each pruned on a receipt verified on the device | **started**: Wi-Fi and mutual TLS to the device listener Proven 2026-10-26 (a check-in, `200`); bundles wait on T2, and `uplink/v1` on the server |
 | **T7** | **LoRa — deferred.** The owner chose on 2026-10-25 not to use the radio at all and to hold it off for battery. The *last seen* beacon design stays recorded in [`beacon/v1`](contracts/beacon/v1/README.md), reserved and deferred. Holding the radio off is T1 and T5 work, not this phase | Not scheduled | **deferred** |
 | **T8** | **Hardening on silicon that allows it.** [Phase 34](#phase-34--chip-hardening-on-replacement-hardware--planned-gated)'s procedure — Secure Boot V2 and flash encryption — run first on a **sacrificial second unit**, then on the one in use; signed OTA over Wi-Fi with power-loss-during-update exercised; revoking a lost device | The unit in use runs a secure-boot-signed, flash-encrypted image, and OTA rollback has been forced on the sacrificial unit | **designed** |
 
@@ -731,8 +751,8 @@ the trail — and the battery lasted as long as this section says it would.
 
 | Repo | Required | Issue |
 |---|---|---|
-| trail device | T1 bring-up and the *read off the unit* table, then T2's capture core on `cairn-format` with the vectors passing on the S3, then the `enrolment/v1` producer in Rust for T3 | — |
-| front door | Settle the five decisions; then the additive contract changes of [plan §11](docs/trail-device-plan.md#11-contract-changes) — three record types, four event types, the `RTC` source, manifest key 30 `device_class`, a `ble/v1` device-class record, the carrier `kind` in `store/v1` and `sync/v1`, activity views — through the normal process, with vectors | — |
+| trail device | ~~T1 bring-up and the *read off the unit* table~~ (done); T2's capture core on `cairn-format` with the vectors passing on the S3, then the `enrolment/v1` producer in Rust for T3 | — |
+| front door | Settle the two open decisions; renumber the plan's record types past `0x0C`; then the additive contract changes of [plan §11](docs/trail-device-plan.md#11-contract-changes) — three record types, four event types, the `RTC` source, manifest key 30 `device_class`, a `ble/v1` device-class record, the carrier `kind` in `store/v1` and `sync/v1`, activity views — through the normal process, with vectors | — |
 | front door | Propagate the seven-repository nav block to the dongle, server, dashboard, iOS and modules repositories (the front door and the trail repository carry it; `tools/cmd/pin-dashboard` reads the trail repository since 2026-10-25) | — |
 | firmware | **Extract `cairn-format`**: the emulator's `src/format` as a `no_std` + `alloc` workspace crate the emulator itself depends on, with its vectors and fault matrix unchanged. Then every `format/v3` addition reaches the C writer and `cairn-format` in the same release — the Rust side now ships on a device | — |
 | server | A `kind` on the vehicle registry; decode `BARO_SAMPLE`, `POWER_STATUS`, `ACTIVITY_SUMMARY` and the new events into new store tables; `v_activity_summary` with elevation fused from barometer and GNSS; a walking-speed variant of `v_position_trusted`'s rule | — |
@@ -878,7 +898,7 @@ break one does not ship.
 | Release channels | **Three: `dev`, `beta`, `stable`** (2026-10-10). `dev` is the working tree with no promise; `beta` is tagged and runs on a second stack on the prod host; `stable` is tagged, public from the first tag, and carries **only** features marked `proven`. No release branches: `main` plus tags, because six repositories and one maintainer cannot pay a merge cost per channel |
 | Versioning | **Per-repository semver, pre-1.0, plus a release-train manifest** in the front door naming every component's tag, commit and the one `contracts-vX.Y.Z` they all pin. A repository that did not change does not get a tag. `1.0.0` waits for [Phase 32](#phase-32--release-engineering-flash-it-from-a-browser--planned) |
 | Which features are in `stable` | Decided by **recorded maturity, not judgement**: `contracts/release/v1/features.json` marks each surface `proven` / `built` / `designed`, and `proven` requires named evidence. Flag-gated in `stable`, enabled in `beta` — one list, no forked code |
-| A second device (2026-10-25) | A **handheld trail device** on a LILYGO T-Beam Supreme (ESP32-S3), in its own repository, writing `format/v3` unchanged in layout. **Firmware in Rust on `esp-hal` with Embassy** (owner, 2026-10-25), sharing `cairn-format` with the emulator rather than reusing the dongle's C. The carrier model, Meshtastic and the number of boards are still the owner's — see [T1–T8](#t1t8--the-trail-device--designed) |
+| A second device (2026-10-25) | A **handheld trail device** on a LILYGO T-Beam Supreme (ESP32-S3), in its own repository, writing `format/v3` unchanged in layout. **Firmware in Rust on `esp-hal` with Embassy** (owner, 2026-10-25), sharing `cairn-format` with the emulator rather than reusing the dongle's C. The carrier model, Meshtastic and the number of boards are still the owner's — see [T1–T8](#t1t8--the-trail-device--in-progress) |
 | Where `beta` runs | A **second stack on the prod host**, own ports and own data directory, seeded by restoring a prod snapshot. Not the Mac: every bug so far has lived where the real certificates and real uploads are. The UI goes under `/beta` on the existing origin, because a passkey is bound to its origin and a second hostname means enrolling every credential again |
 
 The promotion gates, the port map and the defect triage are in
@@ -910,7 +930,7 @@ can be recognised as stale rather than followed.
 | 2026-10-08 | **A module system**, in a sixth repository, with all six interpretations carved out of the core |
 | 2026-10-10 | **The ingest listener binds loopback, not the wildcard.** `tailscale serve --tcp 8443` and `cairn-server` had been competing for the same port, and whoever lost could not start. tailscaled's own config forwards to `tcp://localhost:8443`, so loopback is where the server always belonged. It costs LAN ingest on `:8443`, which has no consumer while the Wi-Fi uplink is gated off |
 | 2026-10-10 | **The project gets channels.** The owner's read was that it ran further and faster than intended and parts are rough. Nothing is cancelled and `dev` does not slow down; what changes is that `stable` ships only what has evidence, `beta` carries the rest openly, and [Phase 32](#phase-32--release-engineering-flash-it-from-a-browser--planned) moves onto the critical path because `stable` is public from its first tag ([Phase 36](#phase-36--two-channels-beta-and-stable--planned)) |
-| 2026-10-25 | **A second device: the trail device.** Cairn stops being only a car logger. A handheld LILYGO T-Beam Supreme records hikes, walks and dongle-less drives into the same `format/v3` bundles, in a seventh repository, scheduled as [T1–T8](#t1t8--the-trail-device--designed) beside the dongle's phases. The vehicle becomes, by recommendation, a *carrier* of kind `car` or `person` — no format change |
+| 2026-10-25 | **A second device: the trail device.** Cairn stops being only a car logger. A handheld LILYGO T-Beam Supreme records hikes, walks and dongle-less drives into the same `format/v3` bundles, in a seventh repository, scheduled as [T1–T8](#t1t8--the-trail-device--in-progress) beside the dongle's phases. The vehicle becomes, by recommendation, a *carrier* of kind `car` or `person` — no format change |
 | 2026-10-08 | Time is collected from **every** source — GNSS, the cellular network, the phone — and the backend chooses. The manifest basis stays first-wins; the `TIME_OBSERVATION` records are the evidence trail |
 
 ## Deferred deliberately

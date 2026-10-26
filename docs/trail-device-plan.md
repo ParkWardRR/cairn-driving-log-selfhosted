@@ -3,7 +3,7 @@
 **Status: Designed.** Nothing is built and nothing has run. The board has not been powered on
 for Cairn. The firmware is **Rust on `esp-hal` with Embassy** (the owner's choice, 2026-10-25).
 This document is the design; the schedule is
-[ROADMAP.md, T1–T8](../ROADMAP.md#t1t8--the-trail-device--designed). The firmware lives in its
+[ROADMAP.md, T1–T8](../ROADMAP.md#t1t8--the-trail-device--in-progress). The firmware lives in its
 own repository,
 [cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware).
 
@@ -349,6 +349,11 @@ fresh evidence**, and says so when it cannot confirm. A logger that cannot say "
 not trustworthy.
 
 ## 11. Contract changes
+
+> [!NOTE]
+> **Renumbering needed (2026-10-26).** `contracts-v0.9.0` gave record type `0x0C` to
+> `WIFI_SCAN`, so the record numbers below (`0x0C`–`0x0E`) take the next free values when
+> proposed. The trail device writes `WIFI_SCAN` itself for its Wi-Fi fingerprint scans.
 
 All **Designed**, none merged into a protocol's spec. Each one follows the
 [contract process](../contracts/README.md#how-a-contract-changes): spec and implementation

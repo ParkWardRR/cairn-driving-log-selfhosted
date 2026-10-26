@@ -1,10 +1,11 @@
 <!-- cairn-nav:start -->
-<p align="center"><b>Cairn is a family of six repositories.</b> Each builds, tests and releases on its own; they agree through the shared <a href="https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts">contracts</a>, and they share this one roadmap.</p>
+<p align="center"><b>Cairn is a family of seven repositories.</b> Each builds, tests and releases on its own; they agree through the shared <a href="https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts">contracts</a>, and they share this one roadmap.</p>
 
 | Part | Repository | What it does | Stack | Docs | Issues | CI |
 |---|---|---|---|---|---|---|
 | Front door | **[cairn-driving-log-selfhosted](https://github.com/ParkWardRR/cairn-driving-log-selfhosted)** ◀ you are here | Docs, this roadmap, shared protocol contracts | Markdown · Go tools | [docs](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/issues) | [CI](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/actions) |
 | Dongle | [cairn-esp32-device-firmware](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | In-car recorder: OBD-II, GNSS, IMU to encrypted SD bundles | C++ · C · Rust | [docs](https://github.com/ParkWardRR/cairn-esp32-device-firmware/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues) | [CI](https://github.com/ParkWardRR/cairn-esp32-device-firmware/actions) |
+| Trail device | [cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware) | Handheld recorder for hiking, walking and driving without the dongle | C++ · C | [docs](https://github.com/ParkWardRR/cairn-trail-device-firmware/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-trail-device-firmware/issues) | [CI](https://github.com/ParkWardRR/cairn-trail-device-firmware/actions) |
 | Phone | [cairn-ios-companion-app](https://github.com/ParkWardRR/cairn-ios-companion-app) | BLE relay, GPS assist, server client | Swift · SwiftUI | [docs](https://github.com/ParkWardRR/cairn-ios-companion-app/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-ios-companion-app/issues) | [CI](https://github.com/ParkWardRR/cairn-ios-companion-app/actions) |
 | Server | [cairn-vehicle-server](https://github.com/ParkWardRR/cairn-vehicle-server) | Verifies, decrypts, stores; serves app and dashboard | Go | [docs](https://github.com/ParkWardRR/cairn-vehicle-server/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-vehicle-server/issues) | [CI](https://github.com/ParkWardRR/cairn-vehicle-server/actions) |
 | Dashboard | [cairn-vehicle-web-dashboard](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard) | Browser UI: trips, places, engine, health | Nuxt · TypeScript | [docs](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/issues) | [CI](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/actions) |
@@ -13,10 +14,10 @@
 <sub>Shared: [Roadmap](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/ROADMAP.md) · [Install](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/INSTALL.md) · [Architecture](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/docs/architecture.md) · [Threat model](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/docs/threat-model.md) · [Trust model](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/docs/trust-model-v3.md) · [Contracts](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts) · [Archive of the original monorepo](https://github.com/ParkWardRR/cairn-original-monorepo-archive)</sub>
 <!-- cairn-nav:end -->
 <h1 align="center">The Cairn roadmap</h1>
-<p align="center"><strong>One roadmap for all six repositories: where the project has been, where it is going, and what each repository has to do next.</strong></p>
+<p align="center"><strong>One roadmap for all seven repositories: where the project has been, where it is going, and what each repository has to do next.</strong></p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/reviewed-2026--10--24-2E86C1?style=flat-square" alt="Reviewed 2026-10-24">
+  <img src="https://img.shields.io/badge/reviewed-2026--10--25-2E86C1?style=flat-square" alt="Reviewed 2026-10-25">
   <img src="https://img.shields.io/badge/architecture-v3-2E86C1?style=flat-square" alt="Architecture v3">
   <img src="https://img.shields.io/badge/contracts-v0.8.0-2E86C1?style=flat-square" alt="contracts-v0.8.0">
   <img src="https://img.shields.io/badge/transports-BLE_·_LTE_proven-27AE60?style=flat-square" alt="BLE and LTE proven on hardware">
@@ -59,7 +60,8 @@ itself:
 Phases are numbered in the order they were *started*, not the order they finish. A phase that
 was superseded keeps its number and says what replaced it, so a decision stays traceable.
 Module phases are numbered `M1`–`M7` separately, because the module system cuts across every
-repository at once.
+repository at once. Trail-device phases are numbered `T1`–`T8` separately too, because they run
+beside the dongle's phases rather than after them.
 
 **Dates are absolute.** "Recently" is not a status.
 
@@ -96,6 +98,12 @@ card, read on a Mac and pushed with the server's `cairn-push` over device mTLS. 
 Phase 27 — a drive is judged from its bundles, however they arrive — but it is now the first thing
 Phase 28 has to fix ([firmware #55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55)).
 
+**The trail device was added on 2026-10-25** — a second, handheld recorder for hiking, walking
+and driving without the dongle, in its own repository. It is
+[T1–T8](#t1t8--the-trail-device--designed), it is **Designed, nothing built**, and it is scheduled
+*beside* these phases, never ahead of them: nothing on the dongle's critical path waits for it,
+and a fix it finds in shared code lands in the dongle first.
+
 **Phase 36 was added on 2026-10-10** and runs beside the others rather than after them: much of
 the project is Built and unproven, and today there is no way to ship it as such. It also
 promotes [Phase 32](#phase-32--release-engineering-flash-it-from-a-browser--planned) onto the
@@ -107,13 +115,14 @@ critical path, because the owner chose a `stable` release that a stranger can in
 |---|---|---|
 | [**front door**](https://github.com/ParkWardRR/cairn-driving-log-selfhosted) | This roadmap, the [contracts](contracts/), the threat and trust models, the contract and link checkers, the pin dashboard, the runner installer | Any product code |
 | [**firmware**](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | Capture, sealing, encrypted storage, the receipt-gated prune, the BLE service, the Wi-Fi and LTE uplinks, OTA, the engine-profile generator | What a reading *means*; anything needing a key the server holds |
+| [**trail device**](https://github.com/ParkWardRR/cairn-trail-device-firmware) | The handheld recorder's capture, activity detection, display and buttons, power management, the LoRa beacon, its hardware notes; the pin of the dongle's portable libraries it vendors (`core.lock`) | The vendored libraries themselves — fixes go to the dongle repository; anything about a car |
 | [**iOS app**](https://github.com/ParkWardRR/cairn-ios-companion-app) | Phone GPS assist, the BLE offload relay, the signing client, the on-phone trip browser, CarPlay | Decryption of a bundle; any authority to delete one |
 | [**server**](https://github.com/ParkWardRR/cairn-vehicle-server) | Enrolment, intake, receipts, key escrow, decode, the analytical store, the app API, the local admin API | Presentation; any interpretation a module owns |
 | [**dashboard**](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard) | Every browser page, passkey and Tailnet sign-in, place naming, annotations, the web tier's deploy | Reading bundles; writing to the analytical store |
 | [**modules**](https://github.com/ParkWardRR/cairn-modules) | One package per interpretation — boost, fuel economy, trims, driving style, the speedometer check, place kinds — and `modgen` | The logging core |
 
 The split happened on 2026-10-05; the plan and what was executed are in
-[docs/repo-split-plan.md](docs/repo-split-plan.md). `cairn-modules` was added on 2026-10-08.
+[docs/repo-split-plan.md](docs/repo-split-plan.md). `cairn-modules` was added on 2026-10-08, and `cairn-trail-device-firmware` on 2026-10-25.
 The original single repository is preserved read-only as
 [cairn-original-monorepo-archive](https://github.com/ParkWardRR/cairn-original-monorepo-archive).
 
@@ -158,7 +167,9 @@ The original single repository is preserved read-only as
 constraints](docs/threat-model.md#sharing-design-constraints-before-any-design) come first;
 [`uplink/v1`](contracts/uplink/v1/README.md) — a spec and 15 vectors, while the firmware still
 uses the legacy device listener; the v2 → v3 data migration; multi-phone arbitration;
-multi-dongle selection.
+multi-dongle selection; **the trail device** — [a plan](docs/trail-device-plan.md), a
+repository holding its README and hardware notes, and [`beacon/v1`](contracts/beacon/v1/README.md)
+reserved, with no firmware and no board powered on.
 
 ### Constraints that shape every plan
 
@@ -279,6 +290,7 @@ independent features. Breaking changes were authorised; v2 is dead.
 | 34 | [Chip hardening on replacement hardware](#phase-34--chip-hardening-on-replacement-hardware--planned-gated) | **planned, gated** |
 | 35 | [Routes, stretches and marking a drive](#phase-35--routes-stretches-and-marking-a-drive--planned-two-decisions-open) | **planned, two decisions open** |
 | 36 | [Two channels: beta and stable](#phase-36--two-channels-beta-and-stable--planned) | **planned** — added 2026-10-10 |
+| T1–T8 | [The trail device](#t1t8--the-trail-device--designed) | **designed** — added 2026-10-25 |
 
 ---
 
@@ -672,6 +684,61 @@ same missing unit since it was written — or **ship `stable` with OTA as a beta
 say in `INSTALL.md` that a stable install is flashed over a cable. *Recommendation: buy the
 unit.* Until one is chosen, no `stable` train can be cut.
 
+## T1–T8 — The trail device — **designed**
+
+The owner's request of 2026-10-25: *a physical device for hiking and walking, and sometimes
+driving, without the OBD-II dongle.* The hardware is a **LILYGO T-Beam Supreme** — ESP32-S3,
+u-blox MAX-M10S GNSS, SX1262 LoRa at 915 MHz, BME280 barometer, QMI8658 IMU, a magnetometer, a
+PCF8563 real-time clock, an AXP2101 PMU, an SH1106 OLED and one 18650. The firmware is
+[cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware); the
+design, its alternatives and its risks are [docs/trail-device-plan.md](docs/trail-device-plan.md).
+
+**The shape of it.** The trail device writes **`format/v3` bundles unchanged in layout**, enrols
+through **`enrolment/v1` unchanged**, offloads through **`ble/v1`** and uploads by **`uplink/v1`**,
+so the server, the phone and the dashboard receive it as one more Cairn device. What is new is
+what a carried device can measure — barometric elevation, steps, heading, battery — a start and
+stop driven by movement rather than an ignition, a display, and an optional LoRa *last seen*
+beacon that is never a record. The dongle's portable C libraries are **vendored from a pinned
+commit**, never forked.
+
+**Nothing has started, and five decisions are the owner's**
+([plan §13](docs/trail-device-plan.md#13-decisions-for-the-owner)): the repository name
+(`cairn-trail-device-firmware` was used); the **carrier model** — a `kind` (`car` | `person`) on the
+vehicle registry, so `vehicle_id` keeps its bytes and gains a meaning, *recommended*, against a
+`format/v4`; how the device core is shared — vendored with a `core.lock`, *recommended*; whether to
+speak **Meshtastic** — no, revisited in T7, *recommended*, because Meshtastic and its protobufs are
+GPLv3 and Cairn is Blue Oak; and **buying two boards**, so one can be sacrificed to Secure Boot and
+power-loss-during-OTA, *recommended*.
+
+**Closes when:** a hike is recorded on the device with no phone present, reaches the server by
+BLE or home Wi-Fi, is pruned on a verified receipt, and appears on the dashboard as an activity
+with a correct date, a trusted track, a climb fused from barometer and GNSS, and the marks made on
+the trail — and the battery lasted as long as this section says it would.
+
+| Stage | What | Closes when | State |
+|---|---|---|---|
+| **T1** | **Bring-up.** PlatformIO on `esp32-s3`; the AXP2101 enabling every rail; every part answering — M10 over UBX, PPS, QMI8658 on the shared SPI bus beside the SD card, magnetometer, BME280, PCF8563, SH1106, SX1262 probed without transmitting | A `bringup` build prints a reading from every part, and `docs/hardware.md`'s *read off the unit* table is filled in from the board itself | **designed** |
+| **T2** | **The capture core on the S3.** The dongle's portable libraries vendored under `core.lock`; the **33 `format/v3` vectors passing on the host and in a self-test build on the board**; GNSS from UBX-NAV-PVT, IMU summaries, baro, power; bundles sealed on the card; `TIME_OBSERVATION` from GNSS and the RTC, with the RTC set from GNSS and refused when its voltage-low flag is set | A walk around the block leaves sealed bundles that the server's structural verifier accepts with no key | **designed** |
+| **T3** | **Enrolment and the first hike on the dashboard.** `enrolment/v1` over the USB console; a `person` carrier and an assignment on the server; bundles pushed from the card with `cairn-push`; the new record types decoded; a track and a climb in the store | One hike, its date correct, its track trusted, shown on the dashboard | **designed** |
+| **T4** | **Activities.** Start, pause and stop from movement with hysteresis; the mode guess on the device and the decision on the server; marks; the four screens and the button map; the overlap link to a dongle trip | A day with a walk, a drive and a hike shows three activities of the right kinds, and every mark on the right spot | **designed** |
+| **T5** | **Battery life.** M10 power-save, light sleep between samples, deep sleep on a timer or button (the IMU interrupt is on GPIO 33, which cannot wake the S3 from deep sleep), batched card writes, display timeout, seal-before-flat | **Measured with a meter:** ≥ 24 h of 1 Hz on-foot recording and ≥ 5 days in endurance mode on a 3000 mAh 18650 — or the numbers it does reach, written here | **designed** |
+| **T6** | **The ways home.** `ble/v1` offload through the phone (and `cmd/cairn-phone` until the app carries bundles); **`uplink/v1` over home Wi-Fi as its first implementer**; the receipt-gated prune | A bundle leaves by BLE and another by Wi-Fi, each pruned on a receipt verified on the device | **designed** |
+| **T7** | **LoRa: findable, never authoritative.** The threat model's section on broadcasting a location first; then `beacon/v1`; a home gateway forwarding beacons to the server; *last seen* on the dashboard. Off by default, sealed, within FCC Part 15 | A beacon from a trail reaches the dashboard as a *last seen* marker with its age, and is never written as a position | **designed** |
+| **T8** | **Hardening on silicon that allows it.** [Phase 34](#phase-34--chip-hardening-on-replacement-hardware--planned-gated)'s procedure — Secure Boot V2 and flash encryption — run first on a **sacrificial second unit**, then on the one in use; signed OTA over Wi-Fi with power-loss-during-update exercised; revoking a lost device | The unit in use runs a secure-boot-signed, flash-encrypted image, and OTA rollback has been forced on the sacrificial unit | **designed** |
+
+### What T1–T3 need, per repository
+
+| Repo | Required | Issue |
+|---|---|---|
+| trail device | T1 bring-up and the *read off the unit* table, then T2's capture core with the vendored libraries under `core.lock` and the vectors passing on the S3 | — |
+| front door | Settle the five decisions; then the additive contract changes of [plan §11](docs/trail-device-plan.md#11-contract-changes) — three record types, four event types, the `RTC` source, manifest key 30 `device_class`, a `ble/v1` device-class record, the carrier `kind` in `store/v1` and `sync/v1`, activity views — through the normal process, with vectors | — |
+| front door | Propagate the seven-repository nav block to the dongle, server, dashboard, iOS and modules repositories (the front door and the trail repository carry it; `tools/cmd/pin-dashboard` reads the trail repository since 2026-10-25) | — |
+| firmware | **Nothing new** — the dongle's libraries are vendored as they are. Any `format/v3` addition has to reach the dongle's C writer and the **Rust emulator** in the same release, or firmware CI goes red | — |
+| server | A `kind` on the vehicle registry; decode `BARO_SAMPLE`, `POWER_STATUS`, `ACTIVITY_SUMMARY` and the new events into new store tables; `v_activity_summary` with elevation fused from barometer and GNSS; a walking-speed variant of `v_position_trusted`'s rule | — |
+| dashboard | Activities alongside trips, filtered by carrier and kind; elevation profile; marks on the map | — |
+| iOS | Show the device class in the device list; relay its bundles exactly as the dongle's | — |
+| modules | Later, if at all: a hiking module (climb rate, pace by gradient) once activities exist in the store | — |
+
 ---
 
 ## Contract pins, and what a bump unblocks
@@ -706,6 +773,7 @@ unnoticed. The latest release is **`contracts-v0.8.0`** (2026-10-15).
 | firmware | **`contracts-v0.8.0`** | current. Nothing it pins moved: `format/v3`, `enrolment/v1`, `ble/v1` and `engine/v1` are byte-identical to v0.7.0 |
 | modules | **`contracts-v0.8.0`** | current. The bump moved **no digest** — `boost` still `1f5f8633bcbd5ff8` — and `store/v1.6` is additive |
 | dashboard | **`contracts-v0.8.0`** | current. It moved straight from `contracts-v0.6.0` (skipping `0.7.0`, whose `sync/v1` break it never consumed) once its trip-keyed code had landed and it needed `v_position_trusted` |
+| trail device | **`contracts-v0.8.0`** | new 2026-10-25. Pins `format/v3`, `enrolment/v1`, `ble/v1` and `uplink/v1`, and implements none of them yet. Its additions are designed, not specified ([plan §11](docs/trail-device-plan.md#11-contract-changes)) |
 | iOS app | **`contracts-v0.8.0`** | current. Nothing it pins moved. The open gap is a product one, [iOS #40](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/40): the Trips tab still shows per-boot **drives**, so one errand still appears as several trips |
 
 Four of five moved to `contracts-v0.7.0` on 2026-10-10; all five moved to `contracts-v0.8.0` on 2026-10-15, and are still there on 2026-10-24 (no contract release since). `tools/cmd/pin-dashboard` counts how many releases each pin is
@@ -808,12 +876,15 @@ break one does not ship.
 | Release channels | **Three: `dev`, `beta`, `stable`** (2026-10-10). `dev` is the working tree with no promise; `beta` is tagged and runs on a second stack on the prod host; `stable` is tagged, public from the first tag, and carries **only** features marked `proven`. No release branches: `main` plus tags, because six repositories and one maintainer cannot pay a merge cost per channel |
 | Versioning | **Per-repository semver, pre-1.0, plus a release-train manifest** in the front door naming every component's tag, commit and the one `contracts-vX.Y.Z` they all pin. A repository that did not change does not get a tag. `1.0.0` waits for [Phase 32](#phase-32--release-engineering-flash-it-from-a-browser--planned) |
 | Which features are in `stable` | Decided by **recorded maturity, not judgement**: `contracts/release/v1/features.json` marks each surface `proven` / `built` / `designed`, and `proven` requires named evidence. Flag-gated in `stable`, enabled in `beta` — one list, no forked code |
+| A second device (2026-10-25) | A **handheld trail device** on a LILYGO T-Beam Supreme (ESP32-S3), in its own repository, writing `format/v3` unchanged in layout and vendoring the dongle's portable libraries from a pinned commit. The carrier model, Meshtastic and the number of boards are still the owner's — see [T1–T8](#t1t8--the-trail-device--designed) |
 | Where `beta` runs | A **second stack on the prod host**, own ports and own data directory, seeded by restoring a prod snapshot. Not the Mac: every bug so far has lived where the real certificates and real uploads are. The UI goes under `/beta` on the existing origin, because a passkey is bound to its origin and a second hostname means enrolling every credential again |
 
 The promotion gates, the port map and the defect triage are in
 [docs/release-process.md](docs/release-process.md).
 
-Target hardware is **classic ESP32** (Xtensa LX6, WROVER with PSRAM), not an S3. There is no
+Target hardware for the **dongle** is **classic ESP32** (Xtensa LX6, WROVER with PSRAM), not an S3
+— the **trail device** is an ESP32-S3, and is the first Cairn hardware with Secure Boot V2 and flash
+encryption available. There is no
 secure element, and the eFuse flash-encryption key cannot be read or derived from by software,
 so the root key is a random value in NVS — flash encryption would protect it by protecting the
 flash it lives in, which is exactly what this unit cannot have.
@@ -837,6 +908,7 @@ can be recognised as stale rather than followed.
 | 2026-10-08 | **A module system**, in a sixth repository, with all six interpretations carved out of the core |
 | 2026-10-10 | **The ingest listener binds loopback, not the wildcard.** `tailscale serve --tcp 8443` and `cairn-server` had been competing for the same port, and whoever lost could not start. tailscaled's own config forwards to `tcp://localhost:8443`, so loopback is where the server always belonged. It costs LAN ingest on `:8443`, which has no consumer while the Wi-Fi uplink is gated off |
 | 2026-10-10 | **The project gets channels.** The owner's read was that it ran further and faster than intended and parts are rough. Nothing is cancelled and `dev` does not slow down; what changes is that `stable` ships only what has evidence, `beta` carries the rest openly, and [Phase 32](#phase-32--release-engineering-flash-it-from-a-browser--planned) moves onto the critical path because `stable` is public from its first tag ([Phase 36](#phase-36--two-channels-beta-and-stable--planned)) |
+| 2026-10-25 | **A second device: the trail device.** Cairn stops being only a car logger. A handheld LILYGO T-Beam Supreme records hikes, walks and dongle-less drives into the same `format/v3` bundles, in a seventh repository, scheduled as [T1–T8](#t1t8--the-trail-device--designed) beside the dongle's phases. The vehicle becomes, by recommendation, a *carrier* of kind `car` or `person` — no format change |
 | 2026-10-08 | Time is collected from **every** source — GNSS, the cellular network, the phone — and the backend chooses. The manifest basis stays first-wins; the `TIME_OBSERVATION` records are the evidence trail |
 
 ## Deferred deliberately

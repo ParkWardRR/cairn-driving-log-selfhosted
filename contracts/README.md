@@ -1,8 +1,9 @@
 # Cairn Vehicle Data Protocols
 
 The wire formats and vectors that the parts of Cairn agree on: the dongle's firmware, the
-server, the web dashboard and the phone app. Each can be built, tested and released alone;
-what they share is here, versioned, and checked by machine.
+server, the web dashboard and the phone app — and, planned, the trail device's firmware. Each
+can be built, tested and released alone; what they share is here, versioned, and checked by
+machine.
 
 | Protocol | What it is | Producers / consumers | Status |
 |---|---|---|---|
@@ -15,6 +16,24 @@ what they share is here, versioned, and checked by machine.
 | [`module/v1`](module/v1/) | Modules: interpretation separated from the logging core, one package carrying its dongle, server, web and app parts. Manifest, derived columns, metrics, named queries | server, web, app and the firmware's generator consume; a module set produces | **draft**: schemas, spec and 39 vectors, one checker; nothing implements it yet |
 | [`uplink/v1`](uplink/v1/) | How a dongle with Wi-Fi or LTE uploads bundles itself: device-signed requests, a pinned server key, the relay's offer/chunk/commit/receipt | reserved for the firmware; server | **draft**: spec and vectors only, nothing implements it yet |
 | [`share/v1`](share/v1/) | A portable trip export with redaction | reserved | **reserved, draft**: no design until the threat model has a sharing section |
+| [`beacon/v1`](beacon/v1/) | A sealed LoRa position beacon: *last seen*, provisional, never a record | reserved for the trail device; a home gateway | **reserved, draft**: no design until the threat model has a section for it |
+
+### A second device: the trail device (planned)
+
+A handheld recorder for hiking, walking and occasional driving without the OBD-II dongle — a
+LILYGO T-Beam Supreme (ESP32-S3, u-blox MAX-M10S, SX1262 LoRa, BME280, SH1106 OLED). It is
+**Designed, nothing built**; the plan is [docs/trail-device-plan.md](../docs/trail-device-plan.md)
+and its firmware is
+[cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware).
+
+It writes **`format/v3` unchanged in layout**, enrols through **`enrolment/v1` unchanged**, offloads
+through **`ble/v1`** and is meant to be the first implementer of **`uplink/v1`**. What it needs from
+these contracts is additive and **not yet in any spec**: three record types (`BARO_SAMPLE`,
+`POWER_STATUS`, `ACTIVITY_SUMMARY`), four `TRIP_EVENT` types, the `RTC` time source defined, an
+optional manifest `device_class`, a device-class record in `ble/v1` device info, a `kind` on the
+vehicle (*carrier*) in `store/v1` and `sync/v1`, and activity views in `store/v1`. The proposed
+layouts are in [§11 of the plan](../docs/trail-device-plan.md#11-contract-changes); each lands
+through the process below, with all three `format/v3` implementations moving together.
 
 ## Versioning and releases
 

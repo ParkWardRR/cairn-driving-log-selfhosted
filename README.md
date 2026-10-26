@@ -1,10 +1,11 @@
 <!-- cairn-nav:start -->
-<p align="center"><b>Cairn is a family of six repositories.</b> Each builds, tests and releases on its own; they agree through the shared <a href="https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts">contracts</a>, and they share one <a href="https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/ROADMAP.md">roadmap</a>.</p>
+<p align="center"><b>Cairn is a family of seven repositories.</b> Each builds, tests and releases on its own; they agree through the shared <a href="https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts">contracts</a>, and they share one <a href="https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/ROADMAP.md">roadmap</a>.</p>
 
 | Part | Repository | What it does | Stack | Docs | Issues | CI |
 |---|---|---|---|---|---|---|
 | Front door | **[cairn-driving-log-selfhosted](https://github.com/ParkWardRR/cairn-driving-log-selfhosted)** ◀ you are here | Docs, roadmap, shared protocol contracts | Markdown · Go tools | [docs](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/issues) | [CI](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/actions) |
 | Dongle | [cairn-esp32-device-firmware](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | In-car recorder: OBD-II, GNSS, IMU to encrypted SD bundles | C++ · C · Rust | [docs](https://github.com/ParkWardRR/cairn-esp32-device-firmware/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues) | [CI](https://github.com/ParkWardRR/cairn-esp32-device-firmware/actions) |
+| Trail device | [cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware) | Handheld recorder for hiking, walking and driving without the dongle | C++ · C | [docs](https://github.com/ParkWardRR/cairn-trail-device-firmware/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-trail-device-firmware/issues) | [CI](https://github.com/ParkWardRR/cairn-trail-device-firmware/actions) |
 | Phone | [cairn-ios-companion-app](https://github.com/ParkWardRR/cairn-ios-companion-app) | BLE relay, GPS assist, server client | Swift · SwiftUI | [docs](https://github.com/ParkWardRR/cairn-ios-companion-app/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-ios-companion-app/issues) | [CI](https://github.com/ParkWardRR/cairn-ios-companion-app/actions) |
 | Server | [cairn-vehicle-server](https://github.com/ParkWardRR/cairn-vehicle-server) | Verifies, decrypts, stores; serves app and dashboard | Go | [docs](https://github.com/ParkWardRR/cairn-vehicle-server/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-vehicle-server/issues) | [CI](https://github.com/ParkWardRR/cairn-vehicle-server/actions) |
 | Dashboard | [cairn-vehicle-web-dashboard](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard) | Browser UI: trips, places, engine, health | Nuxt · TypeScript | [docs](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/issues) | [CI](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/actions) |
@@ -81,7 +82,7 @@ opposite constraint, and most design decisions follow from it:
 - **Nothing is deleted on faith.** The dongle deletes a recording only after your server hands back
   a *signed receipt* for exactly that recording.
 - **Every part can be replaced.** Formats and protocols are written down, versioned and tested
-  ([contracts](contracts/)), so the six repositories agree by specification, not by sharing code.
+  ([contracts](contracts/)), so the seven repositories agree by specification, not by sharing code.
 
 ## Why use it
 
@@ -257,13 +258,14 @@ encryption is not yet enabled. Honest limits are part of the design; see
 
 ## The repositories
 
-Six repositories, each of which can be built, tested and released alone, and one shared
+Seven repositories, each of which can be built, tested and released alone, and one shared
 [roadmap](ROADMAP.md) that sequences the work across all of them.
 
 | Repository | Responsibility |
 |---|---|
 | **this one**, [cairn-driving-log-selfhosted](https://github.com/ParkWardRR/cairn-driving-log-selfhosted) | The front door: system documentation, the [roadmap](ROADMAP.md), the shared [contracts](contracts/) and their checker, the link checker, the pin dashboard, the CI runner installer |
 | [cairn-esp32-device-firmware](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | The in-car dongle. Captures GNSS, IMU and OBD into encrypted append-only segments, seals bundles, serves BLE (phone GPS in, offload out), verifies receipts and prunes. Has a host test suite and a Rust emulator (C, Rust) |
+| [cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware) | The trail device: a handheld LILYGO T-Beam Supreme (ESP32-S3, u-blox M10 GNSS, barometer, LoRa) that records hikes, walks and dongle-less drives into the same `format/v3` bundles. **Designed, nothing built** — a README, hardware notes and a contract pin ([plan](docs/trail-device-plan.md)) |
 | [cairn-ios-companion-app](https://github.com/ParkWardRR/cairn-ios-companion-app) | The iPhone app. Feeds the dongle phone GPS over BLE; is becoming an enrolled, signing client of the server; will relay bundles (Swift) |
 | [cairn-vehicle-server](https://github.com/ParkWardRR/cairn-vehicle-server) | Your server. Enrols devices and apps, verifies, stores and decodes bundles, issues signed receipts, serves the phone API and the analytical store (Go) |
 | [cairn-vehicle-web-dashboard](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard) | The browser dashboard. Reads the analytical store through server-side routes; signs in with a passkey or a Tailnet identity (Nuxt) |
@@ -294,6 +296,7 @@ breaking change adds a new directory (`format/v4`) rather than editing an old on
 | [`module`](contracts/module/v1/README.md) | Modules: interpretation separated from the logging core, one package carrying its dongle, server, web and app parts. Manifest, derived columns, metrics, named queries | server, web, app and the firmware's generator consume | v1 | **draft**: schemas, spec and 39 vectors; **two** implementations (`modgen` in cairn-modules, and the server's `internal/modules`), and the server runs module-owned derivations. Views, metrics and named queries are not implemented yet |
 | [`uplink`](contracts/uplink/v1/README.md) | How a dongle with Wi-Fi or LTE uploads bundles itself: device-signed requests, a pinned server key, offer/chunk/commit/receipt | reserved for the firmware; server | v1 | **draft**: spec and 15 vectors only, nothing implements it |
 | [`share`](contracts/share/v1/README.md) | A portable trip export with redaction | reserved | v1 | **reserved, draft**: no design until the threat model's sharing section is satisfied |
+| [`beacon`](contracts/beacon/v1/README.md) | A sealed LoRa position beacon from the trail device: *last seen*, provisional, never a record | reserved for the trail device; a home gateway | v1 | **reserved, draft**: no design until the threat model has a section for it |
 
 Version and status are read from [contracts/README.md](contracts/README.md); what changed in each
 release, including unreleased documentation edits, is in [contracts/CHANGELOG.md](contracts/CHANGELOG.md).
@@ -332,6 +335,7 @@ The current pins, generated from each repository's lock files by
 | [cairn-vehicle-server](https://github.com/ParkWardRR/cairn-vehicle-server) | `contracts-v0.8.0` (`412a5ee`) | current | ble v1, enrolment v1, format v3, module v1, store v1, sync v1 | firmware `f71355e` (interop) |
 | [cairn-vehicle-web-dashboard](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard) | `contracts-v0.8.0` (`412a5ee`) | current | store v1 | vehicle server `a5512e5` |
 | [cairn-esp32-device-firmware](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | `contracts-v0.8.0` (`412a5ee`) | current | ble v1, engine v1, enrolment v1, format v3 | none |
+| [cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware) | `contracts-v0.8.0` (`412a5ee`) | current | ble v1, enrolment v1, format v3, uplink v1 | none |
 | [cairn-ios-companion-app](https://github.com/ParkWardRR/cairn-ios-companion-app) | `contracts-v0.8.0` (`412a5ee`) | current | ble v1, enrolment v1, format v3, sync v1 | none |
 | [cairn-modules](https://github.com/ParkWardRR/cairn-modules) | `contracts-v0.8.0` (`412a5ee`) | current | engine v1, module v1, store v1 | none |
 <!-- pins:end -->
@@ -347,7 +351,7 @@ bumps when it needs the change — but it should be visible either way. Every co
 
 | Document | What it is |
 |---|---|
-| [ROADMAP.md](ROADMAP.md) | **The single roadmap for all six repositories**: what is proven, what is next, what each repository has to do, the decisions, the invariants and the phase history |
+| [ROADMAP.md](ROADMAP.md) | **The single roadmap for all seven repositories**: what is proven, what is next, what each repository has to do, the decisions, the invariants and the phase history |
 | [INSTALL.md](INSTALL.md) | What you need, the order to install the parts in, and what every repository shares: the contracts fetch, the two keys to back up first, and the Tailscale rule |
 | [docs/architecture.md](docs/architecture.md) | The component map: system diagram, core rules, listeners, data flow |
 | [docs/trust-model-v3.md](docs/trust-model-v3.md) | The normative trust model: actors and paths, vehicles and counters, storage encryption, enrolment, hardening |
@@ -355,6 +359,7 @@ bumps when it needs the change — but it should be visible either way. Every co
 | [docs/lte-cellular-design.md](docs/lte-cellular-design.md) | LTE and cellular connectivity design: hardware, connectivity paths, radio scheduling, data budgets, security boundaries, and privacy constraints |
 | [docs/guarantee-audit.md](docs/guarantee-audit.md) | Every documented guarantee and the test that verifies it, and what is not covered |
 | [docs/repo-split-plan.md](docs/repo-split-plan.md) | The plan, outcome and follow-up issues of splitting the monorepo into these repositories |
+| [docs/trail-device-plan.md](docs/trail-device-plan.md) | The second device: a handheld LILYGO T-Beam Supreme for hiking, walking and dongle-less driving. Hardware, what carries over from the dongle, the carrier question, activities, power, LoRa, the proposed contract changes and five decisions for the owner. **Designed, nothing built** — see the [roadmap](ROADMAP.md#t1t8--the-trail-device--designed) |
 | [docs/module-system-plan.md](docs/module-system-plan.md) | The seven-stage plan for separating interpretation (boost, fuel economy, trims, driving style, speedometer check, place kinds) from the GPS-logging core, as modules carrying their dongle, server, web and iOS parts in one package. **M1–M2 done; M3 partly done** — see the [roadmap](ROADMAP.md#m1m7--the-module-system--in-progress) |
 | [tools/README.md](tools/README.md) | The Go tools and scripts this repository still uses, and what each is for |
 
@@ -411,7 +416,7 @@ Details: [trust model section 7](docs/trust-model-v3.md) and the firmware's
 ## Roadmap in brief
 
 The full document is **[ROADMAP.md](ROADMAP.md)** — the only roadmap in the project, covering all
-six repositories. This is the short version.
+seven repositories. This is the short version.
 
 **The next three phases, in order:**
 
@@ -450,6 +455,14 @@ server, web and app parts in one package
 module-owned derivation; this is how "a new metric can be added by configuration, not by editing
 core code" finally becomes true.
 
+**The seventh repository.** A second device for when there is no car, or no dongle in it: a
+handheld recorder for hiking and walking, on a LILYGO T-Beam Supreme
+([cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware),
+[plan](docs/trail-device-plan.md)). It writes the same sealed bundles and reaches the same server;
+what it adds is elevation, steps, a display and an optional LoRa *last seen* beacon. Scheduled as
+[T1–T8](ROADMAP.md#t1t8--the-trail-device--designed), beside the dongle's phases and never ahead
+of them. Nothing is built.
+
 **Where things stand by phase:** the v2 data path (1–12) is complete; the analytical store and the
 dashboard (13–18) are in progress; v3 trust, vehicles, the encrypted format and the sync API
 (19–22) are done; Tailscale deployment (23) is in progress; chip hardening (24) is reassigned to
@@ -466,6 +479,7 @@ own toolchain, build and test commands in its README; start there.
 | Server and admin tools | [cairn-vehicle-server](https://github.com/ParkWardRR/cairn-vehicle-server) | Go; PostgreSQL with PostGIS for the decode tests; a C toolchain for the DuckDB store |
 | Dashboard | [cairn-vehicle-web-dashboard](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard) | Node.js, Nuxt |
 | Dongle firmware and emulator | [cairn-esp32-device-firmware](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | PlatformIO (Arduino on ESP-IDF); Rust for the emulator |
+| Trail device firmware | [cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware) | PlatformIO on ESP32-S3, once T1 begins; nothing to build yet |
 | iPhone app | [cairn-ios-companion-app](https://github.com/ParkWardRR/cairn-ios-companion-app) | Xcode, Swift |
 | Modules and their generator | [cairn-modules](https://github.com/ParkWardRR/cairn-modules) | Rust for `modgen`; nothing else yet |
 | This repository's tools | here, [`tools/`](tools/README.md) | Go |

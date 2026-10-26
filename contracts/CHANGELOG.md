@@ -5,7 +5,12 @@ publishes. Protocol directories are versioned independently of the collection ta
 
 ## Unreleased
 
-Nothing yet.
+- **`beacon/v1` reserved** (README only, no spec, no vectors): a sealed LoRa position beacon for
+  the planned trail device, provisional by rule — never a stored position, never a reason to
+  prune. Nothing to consume. See [docs/trail-device-plan.md](../docs/trail-device-plan.md).
+- The trail device's proposed additions to `format/v3`, `ble/v1`, `store/v1` and `sync/v1` are
+  **designed, not specified**; they are listed in the plan's §11 and are not part of any
+  protocol directory yet.
 
 ## 0.8.0 (2026-10-15)
 

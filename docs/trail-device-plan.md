@@ -1,7 +1,8 @@
 # Trail device plan
 
 **Status: Designed.** Nothing is built and nothing has run. The board has not been powered on
-for Cairn. This document is the design; the schedule is
+for Cairn. The firmware is **Rust on `esp-hal` with Embassy** (the owner's choice, 2026-10-25).
+This document is the design; the schedule is
 [ROADMAP.md, T1–T8](../ROADMAP.md#t1t8--the-trail-device--designed). The firmware lives in its
 own repository,
 [cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware).
@@ -76,30 +77,87 @@ the bring-up tests prove it under load.**
 ## 3. What carries over from the dongle
 
 The point of putting this device in Cairn rather than running Meshtastic is that the hard parts
-already exist and are proven on hardware:
+already exist and are proven on hardware. What carries over is mostly **design, contracts and
+vectors**, not code: the trail firmware is Rust ([§3.1](#31-the-firmware-stack-rust-esp-hal-embassy)),
+and the dongle is C and C++. The exception is `format/v3`, which already has a Rust implementation
+([§3.2](#32-how-the-code-is-shared)).
 
-| From the dongle | Reused as | Why it carries over unchanged |
+| From the dongle | Carried over as | Why it carries over unchanged |
 |---|---|---|
 | `format/v3` sealing — AEAD per frame, CRC chain, Merkle root, signed manifest | The bundle format, byte for byte | Nothing in it is about cars except the *name* of one header field ([§5](#5-who-carries-it-the-carrier-question)) |
-| `K_root` in NVS, escrow through `enrolment/v1` | Key management | The same blob, sealed to the same server key |
-| The device counter, reserved before the first header exists | Counter handling | Same rule, same reasons |
+| `K_root` generated on the hardware RNG and kept in flash, escrowed through `enrolment/v1` | Key management | The same blob, sealed to the same server key. Flash storage is `sequential-storage`, not NVS, so the durability rules are re-proven rather than assumed |
+| The device counter, reserved and durable before the first header exists | Counter handling | Same rule, same reasons |
 | The receipt-gated prune, receipts outside the bundle | Deletion | [Invariant 2](../ROADMAP.md#guiding-invariants) is not negotiable on a hiking device either |
 | `ble/v1` offload — `LIST`, `GET_MANIFEST`, `READ`, `PUT_RECEIPT` | The phone path | The iPhone app and `cmd/cairn-phone` carry ciphertext they cannot read; they do not care what produced it |
 | `TIME_OBSERVATION`, the plausibility floor (invariant 6) | Time | GNSS and the RTC both lie in ways that parse |
 | The GNSS plausibility gate ([firmware PR #53](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/53)) | Phantom-fix refusal | Re-tuned: walking speeds, no OBD speed to cross-check |
-| Secure OTA — separate update key, verify-before-download, hash-from-flash | Updates | The S3 has the same A/B partition model |
+| One transition controller owns all state; sensing only reports facts ([Phase 6](../ROADMAP.md#era-1--the-v2-core-data-path)) | The task architecture | It maps directly onto Embassy tasks and channels |
+| Secure OTA — separate update key, verify-before-download, hash-from-flash, set the boot slot last | Updates | The S3 has the same A/B partition model |
 
-**How the code is shared.** The dongle's portable C libraries (`cairn_format`, `cairn_bundle`,
-`cairn_fs`, `cairn_store`, `cairn_offload`, `cairn_ota`, `cairn_blesec`, `cairn_devinfo`,
-`cairn_prov`, `cairn_uplink`) are vendored into the trail repository from **one pinned firmware
-commit**, recorded in a `core.lock` beside `contracts.lock` and checked the same way. They are
-not edited in the trail tree: a fix goes to the dongle repository and arrives by bumping the pin.
-If a second bump finds the vendoring painful, the libraries move into their own repository — a
-decision for when there are two real consumers, not before ([§13](#13-decisions-for-the-owner)).
+### 3.1 The firmware stack: Rust, esp-hal, Embassy
 
-Both devices must pass **the same 33 `format/v3` vectors** on the host and in a self-test build
-on their own silicon. A different CPU (Xtensa LX7 rather than LX6) is exactly where a ROM CRC
-wrapper behaved differently last time ([Phase 12](../ROADMAP.md#era-1--the-v2-core-data-path)).
+**Decided by the owner, 2026-10-25:** the trail firmware is **Rust on `esp-hal` with Embassy**, not
+the dongle's Arduino-on-ESP-IDF C and C++. Reasons that hold up on their own: the bundle format
+already exists in Rust; a device that parses radio input (BLE, LoRa, a GNSS UART) benefits from
+memory safety more than most; async tasks fit a device that should sleep between samples; and the
+ecosystem's licences (MIT / Apache-2.0) sit cleanly beside Cairn's Blue Oak.
+
+| Need | Crate | Notes |
+|---|---|---|
+| HAL | `esp-hal` 1.x | The stable core; some drivers sit behind its `unstable` feature |
+| Async runtime | `embassy-executor`, `embassy-time`, `embassy-sync`, through `esp-rtos` | `esp-rtos` provides Embassy support for `esp-hal` and the scheduler `esp-radio` needs |
+| Wi-Fi and BLE controller | `esp-radio` | Needs a heap and `esp-rtos`; `unstable` |
+| BLE host and GATT | `trouble-host` | The `ble/v1` offload service is re-implemented on it |
+| Networking, TLS | `embassy-net`; `embedded-tls` (TLS 1.3 client) or `esp-mbedtls` | For `uplink/v1` over home Wi-Fi; chosen in T6 |
+| Heap | `esp-alloc`, on the 8 MB PSRAM | |
+| Keys and counter in flash | `esp-storage` + `sequential-storage` | Replaces NVS |
+| Bootloader, partitions, OTA | `esp-bootloader-esp-idf` | The ESP-IDF second-stage bootloader, the app descriptor and the OTA slots |
+| SD card, FAT | `embedded-fatfs` or `embedded-sdmmc` | **A risk:** sealing is an atomic directory rename ([format/v3 §2.1](../contracts/format/v3/spec.md)), so the FAT layer must rename and flush in a known order. Chosen in T2 by test, not by README |
+| SD + IMU on one SPI bus | `embassy-embedded-hal` shared bus behind a mutex | The shared-bus rule ([§2](#2-the-hardware)) enforced by the type system |
+| GNSS | `ublox` | UBX-NAV-PVT parsing, `no_std` |
+| LoRa | `lora-phy` | SX1262 |
+| Display | `sh1106`, `embedded-graphics` | |
+| Barometer | `bme280` (async) | |
+| PMU, IMU, magnetometer, RTC | **Written here**: small register drivers for the AXP2101, QMI8658, QMC6310/6309 and PCF8563 | The AXP2101 driver is T1's first job, from the register map in X-Powers' MIT-licensed XPowersLib |
+| Cryptography | RustCrypto `chacha20poly1305` (XChaCha20), `hkdf`, `sha2`, `ed25519-dalek`, `x25519-dalek` | The crates the emulator already uses against the vectors. The S3's SHA accelerator only if a measurement asks for it |
+| Randomness | `esp-hal`'s TRNG | Its entropy source must be running; like the dongle, the device **refuses to enrol** without hardware randomness |
+| Logs | `defmt` over the S3's USB-Serial-JTAG | |
+
+**Tasks.** One task owns each bus — the GNSS UART, I²C bus 0 (display, magnetometer, BME280), I²C
+bus 1 (PMU, RTC), the shared SPI bus (SD, IMU) and the radio SPI bus (LoRa) — and reports facts
+over `embassy-sync` channels to **one capture controller task that owns all state** and decides
+every transition. The storage task alone writes the card. That is the dongle's Phase 6 rule, and
+in Embassy it is the natural shape rather than a discipline.
+
+**Toolchain.** The S3 is Xtensa, which upstream Rust does not target: `espup` installs Espressif's
+toolchain fork, and `espflash` flashes and monitors. The logic crates — `cairn-format`, activity
+detection, the plausibility gate — are `no_std` and run their tests on stable Rust on the host,
+which is where the vectors are replayed. CI builds the firmware image and runs the host tests on
+the Podman Linux runners; there is no hardware in CI while there is one board.
+
+### 3.2 How the code is shared
+
+The emulator in the dongle's repository is already a **Rust implementation of `format/v3`**
+(`emulator/src/format`, about 4,400 lines with tests): 33 of 33 vectors, a 20-row fault matrix
+against a live v3 server, mutations each caught. It is `std`-based today. It is extracted into a
+**`no_std` + `alloc` crate, `cairn-format`**, which the emulator and the trail firmware both
+depend on, pinned by git revision in each `Cargo.lock`. A fix lands in the crate, and each
+consumer takes it by bumping the revision.
+
+What that changes, stated plainly:
+
+- **The emulator stops being the lagging implementation.** Today a format change that reaches
+  the C writer but not the Rust emulator turns firmware CI red for days. Once the Rust code ships
+  on a device, the same omission breaks a device — so it can no longer be left for later.
+- **The count of independent `format/v3` implementations stays three** — Go, C and Rust — not
+  four. The emulator and the trail device share one. A shared implementation proves nothing new
+  about the spec; it is counted once.
+- **`enrolment/v1` and `ble/v1` offload get a new, independent implementation.** No Rust version
+  of the enrolment producer or the offload server exists, so the trail device's are written from
+  the specs and replay the existing vectors — enrolment goes from two implementations to three.
+- **The C lessons survive as tests, not code.** The ROM CRC wrapper that dropped its xorout
+  ([Phase 12](../ROADMAP.md#era-1--the-v2-core-data-path)) is why `cairn-format` uses a software
+  CRC and the device runs the vectors in a self-test build on its own silicon.
 
 ## 4. What is new
 
@@ -265,8 +323,8 @@ not trustworthy.
 All **Designed**, none merged into a protocol's spec. Each one follows the
 [contract process](../contracts/README.md#how-a-contract-changes): spec and implementation
 together, candidate vectors, an independent consumer validating them, then a maintainer's tag.
-And a format change has to reach **all three** implementations — Go, the Rust emulator and the
-C firmware — in the same release, or firmware CI goes red.
+And a format change has to reach **all three** implementations — Go, the C dongle and the Rust
+`cairn-format` crate the emulator and the trail device share — in the same release.
 
 | Protocol | Change | Kind |
 |---|---|---|
@@ -293,8 +351,10 @@ What is different, and better: **the ESP32-S3 supports Secure Boot V2 and flash 
 [Phase 34](../ROADMAP.md#phase-34--chip-hardening-on-replacement-hardware--planned-gated) was
 reassigned to "whatever hardware replaces this dongle"; this is the first Cairn hardware on which
 it *can* run. The same prerequisites apply unchanged — a sacrificial unit through the whole
-procedure in development mode first, the OTA path proven, the build on `arduino, espidf` with a
-checked-in `sdkconfig.defaults`. A T-Beam Supreme costs about as much as a tank of fuel, which
+procedure in development mode first, the OTA path proven, and the bootloader's secure-boot and
+flash-encryption configuration checked in. Doing it with an `esp-hal` image — the ESP-IDF
+bootloader from `esp-bootloader-esp-idf`, the application signed with `espsecure` — has not been
+done in this project and is part of what T8 proves. A T-Beam Supreme costs about as much as a tank of fuel, which
 makes the sacrificial unit an easy decision rather than a blocker.
 
 What is different, and worse: **it is carried, so it is lost.** A dongle stays bolted in a car; a
@@ -307,7 +367,8 @@ before the device is used for real, not a later phase.
 |---|---|---|
 | 1 | **Repository name.** `cairn-trail-device-firmware` was used for the new repository | Keep. A cairn is a trail marker; the name was always waiting for this device |
 | 2 | **The carrier model** ([§5](#5-who-carries-it-the-carrier-question)) | A `kind` on the vehicle registry; no format change |
-| 3 | **How the device core is shared** ([§3](#3-what-carries-over-from-the-dongle)) | Vendor from a pinned dongle commit with a `core.lock`; extract a shared repository only after the second bump |
+| — | **Firmware language** | **Decided 2026-10-25: Rust, `esp-hal` + Embassy** ([§3.1](#31-the-firmware-stack-rust-esp-hal-embassy)) |
+| 3 | **Where `cairn-format` lives** ([§3.2](#32-how-the-code-is-shared)): the dongle repository's emulator workspace, the trail repository, or a repository of its own | **The emulator workspace in the dongle repository**, where the code and its fault matrix already are. Move it out only if a third consumer appears |
 | 4 | **Meshtastic.** (a) Cairn only; (b) speak the Meshtastic protocol for beacons; (c) keep stock Meshtastic in the second OTA slot and dual-boot | **(a), with (b) revisited in T7.** Meshtastic is GPLv3 and its protobuf definitions are too; Cairn is Blue Oak. Implementing the protocol from its specification is a licensing question to settle before a line is written, and (c) gives up OTA rollback |
 | 5 | **How many boards.** One unit to use, one to sacrifice | **Two**, before T8 — and the second one is the first chance in the project to exercise power-loss-during-OTA without risking the only unit |
 
@@ -316,7 +377,12 @@ before the device is used for real, not a later phase.
 | Risk | Mitigation |
 |---|---|
 | A board revision differs from the vendor page (three magnetometer variants already) | T1 reads every part off the real unit and records it in the trail repository's `docs/hardware.md`; the firmware probes rather than assumes |
-| The vendored core drifts from the dongle's | `core.lock` pins a commit, CI refuses a vendored tree that does not hash to it, and both devices replay the same vectors |
+| `cairn-format` drifts between the emulator and the device | One crate, pinned by revision in both `Cargo.lock` files, replaying the same vectors in both CIs |
+| Automatic light sleep under Embassy on `esp-hal` is immature | T5 budgets for explicit light sleep around timer waits; measure before assuming the executor's idle is cheap |
+| `esp-radio` is `unstable` and changes between minor releases | Exact versions in `Cargo.lock`, bumped deliberately, never by a floating range |
+| The FAT layer cannot rename a directory atomically, or reorders writes | T2 tears power mid-seal on the board and checks the recovery scan, before the crate choice is final |
+| Wi-Fi and BLE coexistence under `esp-radio` — the dongle's [#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31) on Arduino | T6 runs offload and upload in one boot, repeatedly |
+| Secure Boot V2 with a Rust image is unproven here | T8, on the sacrificial unit only |
 | Battery life far below the target | T5 is a phase of its own with a meter, before anything is called usable on a multi-day trip |
 | Phantom fixes under tree cover and in canyons | The plausibility gate re-tuned for walking, with the IMU and pedometer as the cross-check OBD speed was in the car; the server's `v_position_trusted` already exists |
 | LoRa over-claimed as a safety feature | It is documented, displayed and named as *findable, best effort* — never "emergency" or "SOS" |

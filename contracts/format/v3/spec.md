@@ -294,6 +294,7 @@ must report the isolated damaged byte range and must mark the resulting bundle
 | `0x09` | `POLICY_SNAPSHOT` | §4.9 |
 | `0x0A` | `OBD_EXTENDED` | §4.11 |
 | `0x0B` | `TIME_OBSERVATION` | §4.12 |
+| `0x0C` | `WIFI_SCAN` | §4.13 |
 
 Unknown record types encountered by a reader are **skipped using `frame_len`**,
 counted, and reported. An unknown type is not an error — it is how a newer
@@ -782,6 +783,36 @@ source order above, and treat a source whose implied basis drifts across a trip 
 suspect. A reader that only wants the device's own choice reads the manifest and
 ignores these records entirely — which is what makes the addition safe.
 
+### 4.13 `WIFI_SCAN` — variable, 4 + 8 × `count` bytes
+
+The access points one Wi-Fi scan saw, as evidence of where the car was when GNSS could
+not say: a cold receiver, a garage, a tunnel. A scan is written while the device has no
+accepted fix, and, as a *learning* scan, now and then while it has one, so a reader can
+learn where each access point is from the fixes it was seen beside.
+
+| Offset | Size | Field | Units |
+|---:|---:|---|---|
+| 0 | 1 | `count` | u8, entries that follow, 0-16 |
+| 1 | 1 | `flags` | u8: bit 0 = an accepted GNSS fix was no older than 2 s at the scan (a learning scan); bit 1 = active scan (probe requests sent); bits 2-7 zero |
+| 2 | 2 | `scan_ms` | u16, how long the scan took |
+| 4 | 8 × `count` | entries | each: `bssid` 6 bytes (transmission order), `rssi_dbm` i8, `channel` u8 |
+
+Entries are ordered by `rssi_dbm`, strongest first; the device keeps the 16 strongest. The
+frame's `monotonic_ms` is when the scan completed. A scan that found nothing is written
+with `count` 0: absence is evidence too.
+
+**What is never recorded.** No SSID, ever: a network's name says more about its owner than
+where it is, and position needs only the BSSID. The device leaves out an access point whose
+BSSID is locally administered (bit 1 of the first octet: phone hotspots and randomised
+addresses, which move), and one whose SSID ends in `_nomap` or `_optout` (its owner's
+request not to be mapped). A reader must not reconstruct SSIDs from elsewhere.
+
+**Using it.** A position derived from a scan is an *estimate* with a stated accuracy, never a
+GNSS fix: it is not a `GNSS_SAMPLE`, it never makes a fix trusted, and it never contributes
+to a speed. A reader resolves a scan, in order, by the owner's known places (a place lists
+the BSSIDs seen there), by access-point positions it learned from trusted fixes beside
+learning scans, and, if the owner allows it, by an external geolocation service.
+
 ### 4.10 Degraded-state bitmap
 
 `DEVICE_HEALTH.health_state` is a bitmap, not an enum.
@@ -1110,6 +1141,7 @@ verdicts: *structural* (no key) and *keyed* (with the vector's root).
 | `health-bitmap` | The degraded-state bitmap and its unknown bits round-trip |
 | `obd-extended` | `OBD_EXTENDED` fields, sentinels and `fuel_level_pct` decode |
 | `trip-event-types` | Every `TRIP_EVENT` type decodes |
+| `wifi-scan` | `WIFI_SCAN` records with 0, 3 and 16 entries decode; flags and ordering preserved |
 | `policy-snapshot` | `POLICY_SNAPSHOT` encodes and re-encodes identically |
 | `receipt-valid` | A genuine receipt verifies against the pinned key |
 | `update-descriptor-valid` / `-bad-signature` | A signed update descriptor verifies; a flipped signature is rejected |

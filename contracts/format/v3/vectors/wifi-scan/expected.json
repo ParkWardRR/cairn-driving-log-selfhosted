@@ -1,0 +1,147 @@
+{
+  "name": "wifi-scan",
+  "description": "Three WIFI_SCAN records: no access points, three, and sixteen in a learning scan.",
+  "asserts": "Each record decodes to its count, flags, scan duration and entries, strongest first, each BSSID in transmission order with its signal (signed dBm) and channel. A scan that heard nothing is a valid record with count 0. No SSID is carried.",
+  "scan": {
+    "stop_reason": "EOF",
+    "frames_retained": 3,
+    "stop_offset": 496,
+    "discarded_tail_bytes": 0,
+    "unknown_type_count": 0,
+    "record_counts": {
+      "WIFI_SCAN": 3
+    },
+    "first_seq": 0,
+    "last_seq": 2
+  },
+  "keyed": {
+    "segment_key_hex": "24f7191a4156d6ac88a626e1922ecf5ce32157734499a3055b9d8b4ebfcae979",
+    "stop_reason": "EOF",
+    "frames_retained": 3,
+    "stop_offset": 496,
+    "plaintext_sha256_hex": "f67b3d1de7655992705ea3795ae5baa949c9a968dd8ef6863345c748241f03a9"
+  },
+  "wifi_scan": {
+    "records": [
+      {
+        "monotonic_ms": 5000,
+        "learning": false,
+        "active": true,
+        "scan_ms": 2140,
+        "aps": []
+      },
+      {
+        "monotonic_ms": 65000,
+        "learning": false,
+        "active": true,
+        "scan_ms": 1870,
+        "aps": [
+          {
+            "bssid": "88:dc:97:07:b8:db",
+            "rssi_dbm": -52,
+            "channel": 11
+          },
+          {
+            "bssid": "88:dc:97:07:c1:db",
+            "rssi_dbm": -71,
+            "channel": 6
+          },
+          {
+            "bssid": "88:dc:97:07:02:db",
+            "rssi_dbm": -88,
+            "channel": 1
+          }
+        ]
+      },
+      {
+        "monotonic_ms": 180000,
+        "learning": true,
+        "active": true,
+        "scan_ms": 2310,
+        "aps": [
+          {
+            "bssid": "88:dc:97:07:10:db",
+            "rssi_dbm": -40,
+            "channel": 1
+          },
+          {
+            "bssid": "88:dc:97:07:11:db",
+            "rssi_dbm": -43,
+            "channel": 2
+          },
+          {
+            "bssid": "88:dc:97:07:12:db",
+            "rssi_dbm": -46,
+            "channel": 3
+          },
+          {
+            "bssid": "88:dc:97:07:13:db",
+            "rssi_dbm": -49,
+            "channel": 4
+          },
+          {
+            "bssid": "88:dc:97:07:14:db",
+            "rssi_dbm": -52,
+            "channel": 5
+          },
+          {
+            "bssid": "88:dc:97:07:15:db",
+            "rssi_dbm": -55,
+            "channel": 6
+          },
+          {
+            "bssid": "88:dc:97:07:16:db",
+            "rssi_dbm": -58,
+            "channel": 7
+          },
+          {
+            "bssid": "88:dc:97:07:17:db",
+            "rssi_dbm": -61,
+            "channel": 8
+          },
+          {
+            "bssid": "88:dc:97:07:18:db",
+            "rssi_dbm": -64,
+            "channel": 9
+          },
+          {
+            "bssid": "88:dc:97:07:19:db",
+            "rssi_dbm": -67,
+            "channel": 10
+          },
+          {
+            "bssid": "88:dc:97:07:1a:db",
+            "rssi_dbm": -70,
+            "channel": 11
+          },
+          {
+            "bssid": "88:dc:97:07:1b:db",
+            "rssi_dbm": -73,
+            "channel": 1
+          },
+          {
+            "bssid": "88:dc:97:07:1c:db",
+            "rssi_dbm": -76,
+            "channel": 2
+          },
+          {
+            "bssid": "88:dc:97:07:1d:db",
+            "rssi_dbm": -79,
+            "channel": 3
+          },
+          {
+            "bssid": "88:dc:97:07:1e:db",
+            "rssi_dbm": -82,
+            "channel": 4
+          },
+          {
+            "bssid": "88:dc:97:07:1f:db",
+            "rssi_dbm": -85,
+            "channel": 5
+          }
+        ]
+      }
+    ],
+    "note": "The learning flag marks the scan taken beside an accepted GNSS fix: the only kind a reader may learn access-point positions from."
+  }
+}

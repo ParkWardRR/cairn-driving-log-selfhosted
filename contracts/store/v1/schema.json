@@ -1559,6 +1559,10 @@
     "v_wifi_ap_learned": {
       "columns": [
         {
+          "name": "vehicle_id",
+          "type": "VARCHAR"
+        },
+        {
           "name": "bssid",
           "type": "VARCHAR"
         },

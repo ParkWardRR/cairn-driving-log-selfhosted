@@ -1,6 +1,6 @@
 {
   "contract": "store/v1",
-  "store_contract": "store/v1.6",
+  "store_contract": "store/v1.7",
   "tables": {
     "boost": {
       "columns": [
@@ -643,6 +643,86 @@
         {
           "name": "note",
           "type": "VARCHAR"
+        }
+      ]
+    },
+    "wifi_ap_obs": {
+      "columns": [
+        {
+          "name": "vehicle_id",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "content_root",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "boot_id",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "mono_ms",
+          "type": "UINTEGER"
+        },
+        {
+          "name": "seq",
+          "type": "UINTEGER"
+        },
+        {
+          "name": "observed_at",
+          "type": "TIMESTAMP"
+        },
+        {
+          "name": "bssid",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "rssi_dbm",
+          "type": "TINYINT"
+        },
+        {
+          "name": "channel",
+          "type": "UTINYINT"
+        }
+      ]
+    },
+    "wifi_scan": {
+      "columns": [
+        {
+          "name": "vehicle_id",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "content_root",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "boot_id",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "mono_ms",
+          "type": "UINTEGER"
+        },
+        {
+          "name": "seq",
+          "type": "UINTEGER"
+        },
+        {
+          "name": "observed_at",
+          "type": "TIMESTAMP"
+        },
+        {
+          "name": "flags",
+          "type": "UTINYINT"
+        },
+        {
+          "name": "scan_ms",
+          "type": "USMALLINT"
+        },
+        {
+          "name": "ap_count",
+          "type": "UTINYINT"
         }
       ]
     }
@@ -1473,6 +1553,86 @@
         {
           "name": "last_observed_at",
           "type": "TIMESTAMP"
+        }
+      ]
+    },
+    "v_wifi_ap_learned": {
+      "columns": [
+        {
+          "name": "bssid",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "lat",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "lon",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "observations",
+          "type": "BIGINT"
+        },
+        {
+          "name": "spread_m",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "max_rssi_dbm",
+          "type": "TINYINT"
+        },
+        {
+          "name": "first_seen",
+          "type": "TIMESTAMP"
+        },
+        {
+          "name": "last_seen",
+          "type": "TIMESTAMP"
+        }
+      ]
+    },
+    "v_wifi_scan_unfixed": {
+      "columns": [
+        {
+          "name": "vehicle_id",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "boot_id",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "mono_ms",
+          "type": "UINTEGER"
+        },
+        {
+          "name": "seq",
+          "type": "UINTEGER"
+        },
+        {
+          "name": "observed_at",
+          "type": "TIMESTAMP"
+        },
+        {
+          "name": "ap_count",
+          "type": "UTINYINT"
+        },
+        {
+          "name": "est_lat",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "est_lon",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "est_accuracy_m",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "est_aps",
+          "type": "INTEGER"
         }
       ]
     }

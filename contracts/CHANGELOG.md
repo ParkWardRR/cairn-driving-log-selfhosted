@@ -5,6 +5,32 @@ publishes. Protocol directories are versioned independently of the collection ta
 
 ## Unreleased
 
+**Where the car was when GNSS could not say, and one dongle for two cars.**
+
+### `format/v3` — additive: record type `0x0C` **`WIFI_SCAN`** (§4.13)
+
+The access points one Wi-Fi scan saw — BSSID, signal, channel; never an SSID — written while the
+device has no accepted fix and, as a learning scan, now and then beside one. Locally administered
+BSSIDs and `_nomap`/`_optout` networks are never recorded. A position derived from a scan is an
+estimate with a stated accuracy, never a fix. Older readers skip it via `frame_len`. New vector
+`wifi-scan`. Found on the M240i's drive of 2026-10-25: a cold-started receiver drew nothing for the
+first eight minutes, from home to the first stop.
+
+### `store/v1` — additive, `store/v1.6` → **`store/v1.7`**
+
+The tables **`wifi_scan`** and **`wifi_ap_obs`**, the view **`v_wifi_ap_learned`** (each access
+point's position, learned from trusted fixes beside learning scans) and the view
+**`v_wifi_scan_unfixed`** (scans with no trusted fix within 5 s, with the learned estimate). No
+existing view reads them, so no trip, distance or speed changes. `schema.json` regenerated with
+`go run ./cmd/dump-schema`.
+
+### `enrolment/v1` — additive: **`SET garage`**
+
+`SET garage <slot> <vehicle> <assignment> <engine>`: the cars one dongle moves between, each with
+its own open assignment; the VIN chooses. Landed on main in 830b0c9.
+
+### Reserved and designed, not specified
+
 - **`beacon/v1` reserved** (README only, no spec, no vectors): a sealed LoRa position beacon for
   the planned trail device, provisional by rule — never a stored position, never a reason to
   prune. Nothing to consume, and **deferred** the same day: the owner chose to keep the trail

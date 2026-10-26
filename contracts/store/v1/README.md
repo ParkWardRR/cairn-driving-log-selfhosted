@@ -3,11 +3,12 @@
 What the web dashboard relies on from the server's analytical store, `cairn-tsdb`. Its
 objects and columns are pinned in [`schema.json`](schema.json); this file carries the rest.
 
-**Tables:** `bundles`, `position`, `imu`, `obd`, `boost`, `status`, `transition`, `gap`, from **`store/v1.1`** `tune`, and from **`store/v1.3`** `time_obs`.
+**Tables:** `bundles`, `position`, `imu`, `obd`, `boost`, `status`, `transition`, `gap`, from **`store/v1.1`** `tune`, from **`store/v1.3`** `time_obs`, and from **`store/v1.7`** `wifi_scan` and `wifi_ap_obs`.
 **Views:** `v_telemetry`, `v_reproducibility`, `v_vehicles`, `v_drive_summary`,
 `v_trip_summary`, `v_trim_map`, `v_boost_curve`, `v_pulls`, `v_speed_agreement`,
 `v_gnss_sources`, from **`store/v1.1`** `v_boot_start`, `v_metric_samples`, `v_tune_effect` and
-`v_health_stats`, and from **`store/v1.2`** `v_trip_period`. **Table macros** (`store/v1.2`):
+`v_health_stats`, from **`store/v1.2`** `v_trip_period`, from **`store/v1.6`** `v_position_trusted`, and from
+**`store/v1.7`** `v_wifi_ap_learned` and `v_wifi_scan_unfixed`. **Table macros** (`store/v1.2`):
 `period_summary(from_day, to_day)`. Every table, view and macro result carries `vehicle_id`
 except `time_obs`, which is keyed on the frame that carried the observation.
 
@@ -40,6 +41,20 @@ cannot be stamped with the time it is establishing. For the same reason it does 
 It is a distinct signal from `obd.throttle_pct`, which is the throttle *plate* angle and
 does not reach 100% at wide-open throttle on a drive-by-wire engine. `NULL` means not
 measured, which every row written before the column existed necessarily is.
+
+### Wi-Fi scans (`store/v1.7`)
+
+**`wifi_scan`** is one row per scan (format v3 §4.13), **`wifi_ap_obs`** one per access point it
+saw, joined on `(vehicle_id, boot_id, seq)`. There is no SSID anywhere. `flags` bit 0 marks a
+learning scan, taken beside an accepted GNSS fix.
+
+**`v_wifi_ap_learned`** places each access point at the signal-weighted centre of the trusted
+fixes beside the learning scans that heard it (within 2 s, under 20 m/s), with `spread_m` the RMS
+distance of those sightings; it needs two sightings and drops one that spread over 300 m (a bus, a
+train). **`v_wifi_scan_unfixed`** lists scans with no trusted fix within 5 s either side, with
+`est_lat`, `est_lon`, `est_accuracy_m` and `est_aps` from the learned access points, `NULL` when
+none is known. A consumer may refine an estimate (the owner's places, an external service) but
+must not treat it as a fix, take a speed from it, or add it to a distance.
 
 ### Periods (`store/v1.2`)
 

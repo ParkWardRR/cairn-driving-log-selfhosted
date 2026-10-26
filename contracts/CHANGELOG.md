@@ -5,7 +5,23 @@ publishes. Protocol directories are versioned independently of the collection ta
 
 ## Unreleased
 
-Nothing yet.
+### `format/v3`: additive. **§6.4 Wi-Fi anchors**, `GET /api/v2/wifi-anchors`
+
+The access-point positions a server learned from `WIFI_SCAN` learning scans (`v_wifi_ap_learned`),
+handed back to the device on its mTLS listener so it can place itself from one scan at power-up
+and hint its GNSS receiver (`UBX-MGA-INI-POS_LLH`).
+
+- **Body:** a compact `"CWA1"` binary. A 16-byte header, then 16-byte records `{bssid, lat_e7,
+  lon_e7, acc_m}` sorted by BSSID, at most 4096. It covers the device's open assignments only.
+- **Caching:** the ETag is the body's SHA-256. `If-None-Match` gives a 304.
+- **Statuses:** an empty set is `200` with count 0. An unreadable store is `503`.
+- **Refusal and use:** a reader refuses a malformed body whole. The acceptance rules for an
+  estimate are normative for a device that injects one.
+- Nothing existing changes: no record type, no store object, no other route.
+
+Found on the M240i's drive of 2026-10-25, where a cold receiver drew nothing for eight minutes.
+Implemented by the server (`internal/wifianchors`, cairn-vehicle-server#59) and the firmware
+(`lib/cairn_wifiloc`, cairn-esp32-device-firmware#65). Not tagged.
 
 ## 0.9.0 (2026-10-26)
 

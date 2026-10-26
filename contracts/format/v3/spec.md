@@ -1105,6 +1105,83 @@ the pinned server key **and** its `content_root` equals what the device
 uploaded. A valid signature over a different bundle is not an acknowledgement of
 this one.
 
+### 6.4 Wi-Fi anchors: learned access-point positions for the device (additive, 2026-10-26)
+
+The access-point positions a server has learned from `WIFI_SCAN` learning scans (§4.13), handed
+back to the device, so that at power-up it can place itself from one scan and give its GNSS
+receiver an initial-position hint. Found on the M240i's drive of 2026-10-25: a cold receiver
+drew nothing for eight minutes, and its only hint was the last saved fix at ±10 km. This is
+the device side of "access-point positions it learned" in §4.13. What it yields is a **hint
+to the receiver**, never a position the device records.
+
+```
+GET /api/v2/wifi-anchors          on the device listener (mutual TLS; the certificate names the device)
+If-None-Match: "<sha256 hex>"     optional
+```
+
+| Status | Meaning |
+|---|---|
+| `200` | The body below. `ETag` is the quoted lowercase SHA-256 of the body |
+| `304` | `If-None-Match` matched; no body. Keep the copy |
+| `403` | No certificate, or one that does not name an enrolled, unrevoked device |
+| `503` | The server cannot read its store now. Keep the copy; ask later |
+| `404` | The server does not offer anchors (an older server, or none configured) |
+
+The set covers every vehicle the device holds an **open** assignment to: its garage. A car the
+device has been moved away from no longer contributes. The set is built from `store/v1`'s
+`v_wifi_ap_learned`, which already refuses an access point with fewer than 2 sightings or a
+spread over 300 m. One access point learned by two cars is served once, from the
+better-observed row. With nothing to serve, the answer is `200` with `count` 0, not an error.
+
+**Body.** Little-endian, like the rest of this format.
+
+| Offset | Size | Field | Units |
+|---:|---:|---|---|
+| 0 | 4 | `magic` | `"CWA1"` |
+| 4 | 2 | `version` | u16, = 1 |
+| 6 | 2 | `record_size` | u16, = 16 today; a reader skips bytes past the 16 it knows |
+| 8 | 4 | `count` | u32, records that follow, at most 4096 |
+| 12 | 4 | `generated_at` | u32, Unix seconds of the newest sighting behind the set; 0 when empty |
+| 16 | `record_size` × `count` | records | each below |
+
+| Offset in record | Size | Field | Units |
+|---:|---:|---|---|
+| 0 | 6 | `bssid` | transmission order, as in §4.13 |
+| 6 | 4 | `lat_e7` | i32, degrees × 1e7 |
+| 10 | 4 | `lon_e7` | i32, degrees × 1e7 |
+| 14 | 2 | `acc_m` | u16, metres: `clamp(ceil(spread_m) + 25, 25, 500)` |
+
+Records are sorted by `bssid` bytes, strictly ascending, so a reader can binary-search the body
+as it lies in memory. The server keeps the 4096 most observed (ties: strongest reading, then
+tightest spread) before sorting. `generated_at` is a property of the data, not of the clock.
+The body is therefore deterministic for a given learned set, and the ETag changes only when
+the set does. A device sends its copy's SHA-256 as `If-None-Match`.
+
+A reader **refuses the whole body** if any of these hold:
+- the length is not `16 + record_size × count`;
+- `version` is unknown, or `record_size` is under 16;
+- `count` is over 4096;
+- the BSSIDs are not strictly ascending;
+- a latitude is outside ±90°, a longitude outside ±180°, or an `acc_m` is 0.
+
+One bad record means the bytes are not what the server sent.
+
+**Using it** (normative for a device that injects a hint; the reference is the firmware's
+`lib/cairn_wifiloc`):
+- An estimate from one scan is the signal-weighted centre (weight `10^(rssi_dbm/20)`) of the
+  scan's access points found in the set.
+- It is given only when one of two conditions holds:
+  - two or more are found, and a strict majority of them lie within 300 m of the centre once
+    the rest are dropped;
+  - exactly one is found, heard at −60 dBm or stronger.
+- Its accuracy is at least 100 m, at least the worst `acc_m` used, and at least the RMS
+  distance of those used from the centre.
+- Anything else yields nothing. The receiver cannot be asked whether it took a hint, and a
+  hint wrong by more than its stated accuracy degrades a start, so a doubtful estimate is
+  never given.
+- The set is a map of the owner's places keyed by their routers. A device that keeps a copy
+  keeps it encrypted at rest, and never logs a BSSID or a position from it.
+
 ---
 
 ## 7. Conformance

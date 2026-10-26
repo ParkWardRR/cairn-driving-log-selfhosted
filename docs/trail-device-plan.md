@@ -19,7 +19,7 @@ driving, without the OBD-II dongle.*
 [6. Activities: hike, walk, drive](#6-activities-hike-walk-drive) ·
 [7. Power](#7-power) ·
 [8. Getting bundles home](#8-getting-bundles-home) ·
-[9. LoRa](#9-lora-being-findable-never-authoritative) ·
+[9. LoRa](#9-lora-off) ·
 [10. Display and buttons](#10-display-and-buttons) ·
 [11. Contract changes](#11-contract-changes) ·
 [12. Security posture](#12-security-posture) ·
@@ -40,12 +40,10 @@ What it is **not**:
 - **Not an OBD logger.** It has no vehicle bus. When it rides in a car it records a GNSS and IMU
   track and nothing about the engine. Where the car's dongle recorded the same window, the server
   can lay the two side by side; the devices never talk to each other.
-- **Not an emergency device.** The LoRa radio can make it *findable* on a best-effort basis
-  ([§9](#9-lora-being-findable-never-authoritative)). It is not a PLB, it has no satellite
-  uplink, and nothing in Cairn will claim it can summon help.
+- **Not an emergency device.** It is not a PLB, it has no satellite uplink, its LoRa radio is
+  held off ([§9](#9-lora-off)), and nothing in Cairn will claim it can summon help.
 - **Not Meshtastic.** The board is sold as a Meshtastic node. Cairn firmware replaces that
-  firmware; whether it ever speaks the Meshtastic protocol is an open decision
-  ([§13](#13-decisions-for-the-owner)).
+  firmware, and with the LoRa radio off there is nothing for a Meshtastic protocol to run over.
 
 ## 2. The hardware
 
@@ -56,13 +54,13 @@ with different parts (the magnetometer has three variants).
 | Part | Chip | Bus | Notes for Cairn |
 |---|---|---|---|
 | MCU | **ESP32-S3FN8**, dual-core LX7 | — | 8 MB flash, 8 MB PSRAM. Wi-Fi and BLE 5. **Supports Secure Boot V2 and flash encryption**, which the dongle's rev v1.0 ESP32 cannot |
-| GNSS | **u-blox MAX-M10S** | UART GPIO 8/9, PPS GPIO 6 | Four constellations concurrently. Read **UBX-NAV-PVT**, not NMEA, so `h_acc_cm`/`v_acc_cm` are the receiver's own estimates ([format/v3 §4.1](../contracts/format/v3/spec.md)) |
-| LoRa | **Semtech SX1262** | dedicated SPI (GPIO 10–13), BUSY 4, DIO1 1, RST 5 | 915 MHz US ISM. Beacons only ([§9](#9-lora-being-findable-never-authoritative)) |
+| GNSS | **u-blox MAX-M10S** | UART GPIO 8/9, PPS GPIO 6; power **ALDO4**, backup from VRTC | Read **UBX-NAV-PVT**, not NMEA, so `h_acc_cm`/`v_acc_cm` are the receiver's own estimates ([format/v3 §4.1](../contracts/format/v3/spec.md)). Configured by UBX-CFG-VALSET only; ships at 9600 baud; hot start needs the 18650 |
+| LoRa | **Semtech SX1262** | dedicated SPI (GPIO 10–13), BUSY 4, DIO1 1, RST 5 | **Held off** — never keyed ([§9](#9-lora-off)) |
 | Display | **SH1106**, 128×64 monochrome | I²C bus 0 (GPIO 17/18), `0x3C` | Off by default; a screen is the largest discretionary load |
-| IMU | **QMI8658**, 6-axis | shared SPI, CS 34, INT 33 | Hardware pedometer and wake-on-motion. **INT is GPIO 33, which is not RTC-capable on the S3** — see [§7](#7-power) |
+| IMU | **QMI8658**, 6-axis | shared SPI, CS 34, INT 33; on 3V3, so always powered (schematic) | Hardware pedometer and wake-on-motion. **INT is GPIO 33, which is not RTC-capable on the S3** — see [§7](#7-power) |
 | Magnetometer | **QMC6310** (U/N) or **QMC6309** | I²C bus 0 | Heading at rest, which GNSS cannot give |
 | Environment | **Bosch BME280** | I²C bus 0, `0x77` | Pressure, temperature, humidity. Pressure is the elevation signal |
-| RTC | **NXP PCF8563** | I²C bus 1 (GPIO 42/41), `0x51`, INT 14 | **The first Cairn hardware with a real-time clock.** `TIME_OBSERVATION` source 4 has been reserved for exactly this |
+| RTC | **NXP PCF8563** | I²C bus 1 (GPIO 42/41), `0x51`, INT 14 | **The first Cairn hardware with a real-time clock**, on 3V3 with its own backup cell. `TIME_OBSERVATION` source 4 has been reserved for exactly this |
 | PMU | **X-Powers AXP2101** | I²C bus 1, `0x34`, IRQ 40 | Owns every peripheral rail. **Nothing answers until the PMU enables its rail**, so bring-up starts here. Fuel gauge, charge control, the PWR key |
 | Storage | microSD | shared SPI, CS 47 | The same role as the dongle's card: a cache of ciphertext |
 | Battery | one 18650 | — | Charged over USB-C (3.9–6 V, up to 1 A). The cell also backs the GNSS and the RTC |
@@ -73,6 +71,31 @@ The SD card and the IMU share one SPI bus. The dongle's lesson about a shared, u
 link ([firmware PR #54](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/54)) is
 taken as a design rule from the start: **every shared bus has one owner task or one mutex, and
 the bring-up tests prove it under load.**
+
+### 2.1 What the board's other firmware taught
+
+On 2026-10-25 the owner collected the board's schematics, its stock images and the source of eight
+projects that run on it or do something close — Meshtastic, MeshCore, SoftRF, RNode, a LoRa APRS
+tracker, LilyGO's own board support, and three GPS loggers. The findings, with each source's
+licence, are in the trail repository's [prior-art.md](https://github.com/ParkWardRR/cairn-trail-device-firmware/blob/main/docs/prior-art.md); the board
+facts in [hardware.md](https://github.com/ParkWardRR/cairn-trail-device-firmware/blob/main/docs/hardware.md); the staged procedure in
+[bringup.md](https://github.com/ParkWardRR/cairn-trail-device-firmware/blob/main/docs/bringup.md). Most of those projects are GPL-3.0 or unlicensed, so what
+carries over is facts and lessons; the only code source is the MIT-licensed XPowersLib and
+SensorLib register maps our drivers are written from. What changed the design:
+
+- **The LoRa radio has its own rail (ALDO3)**, so holding it off is one rail never enabled
+  ([§9](#9-lora-off)).
+- **The board is a core module on a carrier**, and its rails are known from the schematics: ALDO1
+  for the display, the I²C sensors *and bus 0's pull-ups*; ALDO4 for GNSS; BLDO1 for the card;
+  DCDC1 for the CPU, IMU and RTC. DCDC3–5 feed only the expansion socket and stay off.
+- **The M10 keeps another firmware's settings** in battery-backed RAM; Cairn writes its own
+  configuration at every boot and clears what Meshtastic left, once.
+- **Power figures:** about **105 mA** for the whole board with the M10 tracking (SoftRF) and about
+  **1.45 mA** in deep sleep (LilyGO) — both shape [§7](#7-power).
+- **The PMU's interrupt misfires** with no battery or a full one: read the PWR key while awake;
+  wake on BOOT or a timer.
+- **No project fuses barometric and GNSS altitude or computes climb.** Cairn's elevation is its own
+  design ([§4](#4-what-is-new)).
 
 ## 3. What carries over from the dongle
 
@@ -98,7 +121,7 @@ and the dongle is C and C++. The exception is `format/v3`, which already has a R
 
 **Decided by the owner, 2026-10-25:** the trail firmware is **Rust on `esp-hal` with Embassy**, not
 the dongle's Arduino-on-ESP-IDF C and C++. Reasons that hold up on their own: the bundle format
-already exists in Rust; a device that parses radio input (BLE, LoRa, a GNSS UART) benefits from
+already exists in Rust; a device that parses radio and serial input (BLE, Wi-Fi, a GNSS UART) benefits from
 memory safety more than most; async tasks fit a device that should sleep between samples; and the
 ecosystem's licences (MIT / Apache-2.0) sit cleanly beside Cairn's Blue Oak.
 
@@ -115,7 +138,6 @@ ecosystem's licences (MIT / Apache-2.0) sit cleanly beside Cairn's Blue Oak.
 | SD card, FAT | `embedded-fatfs` or `embedded-sdmmc` | **A risk:** sealing is an atomic directory rename ([format/v3 §2.1](../contracts/format/v3/spec.md)), so the FAT layer must rename and flush in a known order. Chosen in T2 by test, not by README |
 | SD + IMU on one SPI bus | `embassy-embedded-hal` shared bus behind a mutex | The shared-bus rule ([§2](#2-the-hardware)) enforced by the type system |
 | GNSS | `ublox` | UBX-NAV-PVT parsing, `no_std` |
-| LoRa | `lora-phy` | SX1262 |
 | Display | `sh1106`, `embedded-graphics` | |
 | Barometer | `bme280` (async) | |
 | PMU, IMU, magnetometer, RTC | **Written here**: small register drivers for the AXP2101, QMI8658, QMC6310/6309 and PCF8563 | The AXP2101 driver is T1's first job, from the register map in X-Powers' MIT-licensed XPowersLib |
@@ -124,9 +146,10 @@ ecosystem's licences (MIT / Apache-2.0) sit cleanly beside Cairn's Blue Oak.
 | Logs | `defmt` over the S3's USB-Serial-JTAG | |
 
 **Tasks.** One task owns each bus — the GNSS UART, I²C bus 0 (display, magnetometer, BME280), I²C
-bus 1 (PMU, RTC), the shared SPI bus (SD, IMU) and the radio SPI bus (LoRa) — and reports facts
+bus 1 (PMU, RTC) and the shared SPI bus (SD, IMU) — and reports facts
 over `embassy-sync` channels to **one capture controller task that owns all state** and decides
-every transition. The storage task alone writes the card. That is the dongle's Phase 6 rule, and
+every transition. The storage task alone writes the card. The radio SPI bus has no owner: the
+LoRa chip is sent to sleep once at boot and never addressed again. That is the dongle's Phase 6 rule, and
 in Embassy it is the natural shape rather than a discipline.
 
 **Toolchain.** The S3 is Xtensa, which upstream Rust does not target: `espup` installs Espressif's
@@ -170,7 +193,6 @@ What that changes, stated plainly:
 | **A real-time clock** | `TIME_OBSERVATION` source 4, `RTC`, finally used. Set from GNSS; refused as a basis whenever the PCF8563's voltage-low flag says it lost time |
 | **A display** | Status, the current activity, a bearing back to the start ([§10](#10-display-and-buttons)) |
 | **Start and stop without an ignition** | Recording starts on sustained movement or a button, and stops on sustained stillness or a button ([§6](#6-activities-hike-walk-drive)) |
-| **A LoRa beacon** | Optional, provisional, never stored as truth ([§9](#9-lora-being-findable-never-authoritative)) |
 
 ## 5. Who carries it: the carrier question
 
@@ -238,11 +260,19 @@ is an annotation, never an edit to a sealed bundle (invariant 1).
 numbers come from a meter in T5, not from datasheet arithmetic — the dongle's parked current is
 still unmeasured three weeks in, and this is a device where that number *is* the product.
 
+Two figures from other firmware for this board set expectations: SoftRF quotes about **105 mA**
+for the whole board with the M10 tracking continuously, which empties 3000 mAh in under 29 hours
+before the display, Wi-Fi or BLE draw anything — so **the 24-hour target depends on the
+receiver's power save** (cyclic tracking, which on the M10 rules out SBAS and BeiDou B1C); and
+LilyGO measures about **1.45 mA** in deep sleep on this board, three times its smaller boards, so
+endurance mode gets its days by cutting rails — GNSS, the display and sensors, the card — not by
+sleeping the CPU alone.
+
 What drives it: the M10 tracking continuously is the largest steady load; the ESP32-S3 must
 light-sleep between samples, not idle awake; the SD card is written in batched flushes (the
 dongle's aggressive-flush lesson is about not losing data on a power cut; a trail device's power
 cut is a flat cell, which the PMU announces in advance, so it can seal before it dies); the
-display times out; LoRa transmits only when beacons are enabled.
+display times out; the LoRa radio is held off from boot ([§9](#9-lora-off)).
 
 **Wake sources.** The S3's RTC-capable GPIOs are 0–21. The IMU interrupt is on **GPIO 33**, so
 wake-on-motion cannot wake the chip from deep sleep — the same shape of problem that ruled out deep
@@ -271,29 +301,29 @@ The order a bundle leaves in, and none of these is new code:
 
 There is **no LTE** on this board and no plan to add one.
 
-## 9. LoRa: being findable, never authoritative
+## 9. LoRa: off
 
-The SX1262 can send a small position beacon a few kilometres line-of-sight, and further from a
-ridge. That is useful for one thing — someone at home, or a companion on the trail, can see where
-the device last was — and dangerous to over-claim.
+**Decided by the owner, 2026-10-25: the LoRa radio is not used for anything, and is held off to
+save battery.** The SX1262 is on the board and nothing in the firmware will key it. What that
+takes in practice:
 
-Rules, by analogy with the decision that LTE carries whole bundles and never digests:
+- **The radio is put in its lowest-power state at every boot, before anything else draws power.**
+  If it has a PMU rail of its own, that rail stays disabled; if it shares a rail, the chip is
+  sent its sleep command (cold start, no retention) and its pins are left in a state that does
+  not back-power it. Which of the two applies is a T1 finding, read off the schematic and the
+  board — not assumed. Power-on leaves an SX1262 in standby, drawing on the order of half a
+  milliamp by its datasheet — over a day, a real slice of the battery budget, so *doing nothing* is not the same as *off*.
+- **T1 proves it with a meter**: the board's current with the radio held off is recorded beside
+  its current with the radio merely uninitialised.
+- **No LoRa crate, task or SPI traffic** beyond that one sleep command. The radio SPI bus has no
+  owner task.
+- **The antenna stays fitted.** An SX1262 that is ever keyed without one can be damaged; with the
+  radio off this is a precaution rather than a risk, and it keeps the board able to run its stock
+  firmware again.
 
-- **A beacon is provisional.** It is never written to the analytical store as a position, never
-  joined into an activity, never shown as a track. A beacon that arrives is a *last seen* marker
-  with its age; the activity appears when the bundle does.
-- **A beacon authorises nothing.** No acknowledgement over LoRa can cause a prune (invariant 2).
-- **A beacon is encrypted and authenticated.** A position broadcast in clear text is a location
-  leak to anyone with a $30 receiver. It is sealed to a key the device and the receiving gateway
-  share; the design belongs in the threat model first, as sharing does.
-- **Off by default**, enabled per activity, and the display says when it is on.
-- **US 915 MHz ISM, FCC Part 15** limits on dwell time and power apply; the beacon interval is
-  set by them, not by convenience.
-
-A receiving gateway is a second LoRa radio at home — another T-Beam, or a Meshtastic node if the
-owner chooses interoperability — that forwards beacons to the server over the tailnet. The wire
-format is reserved as [`beacon/v1`](../contracts/beacon/v1/README.md); nothing is designed there
-until the threat model has a section for it.
+The earlier design for a *last seen* beacon — provisional, sealed, never a record, never a reason
+to prune — stays recorded in [`beacon/v1`](../contracts/beacon/v1/README.md), which remains
+reserved and is now **deferred**. Nothing is designed there, and nothing is scheduled.
 
 ## 10. Display and buttons
 
@@ -335,12 +365,12 @@ And a format change has to reach **all three** implementations — Go, the C don
 | `format/v3` | `TIME_OBSERVATION` source **4 `RTC`** moves from reserved to defined, with the rule that an RTC reporting lost integrity (PCF8563 `VL`) is not written at all | clarifying |
 | `format/v3` | Prose: `vehicle_id` identifies what *carried* the device; `DEVICE_HEALTH.battery_mv` is the device's supply — the car's rail on a dongle, the cell on a self-powered device | clarifying |
 | `format/v3` | Manifest key **30 `device_class`**, optional text: `freematics-one-plus-b`, `lilygo-tbeam-supreme`. Absent means a dongle, which is what every existing bundle is | additive — optional keys sort into place, as key 29 did |
-| `ble/v1` | Device-info: a `device class` record and capability bits for barometer, display, LoRa and self-powered; `info_minor` raised | additive |
+| `ble/v1` | Device-info: a `device class` record and capability bits for barometer, display and self-powered; `info_minor` raised | additive |
 | `store/v1` | Tables `baro`, `power`, `activity`; views `v_activity_summary` (distance, moving time, fused elevation gain and loss, pace, steps, mode) and `v_marks`; `kind` on `v_vehicles` | additive |
 | `sync/v1` | `kind` on the vehicle entity, optional | additive; `sync/v1` is still draft |
 | `enrolment/v1` | **No change.** The same blob and console protocol. The board's USB-serial reset differs; that is a tool concern | — |
 | `uplink/v1` | **No change.** The trail device is meant to be its first implementer | — |
-| `beacon/v1` | **Reserved** today: a sealed LoRa position beacon. No design until the threat model's section exists | new, reserved |
+| `beacon/v1` | **Reserved and deferred**: a sealed LoRa position beacon. The radio is held off (owner, 2026-10-25), so nothing is designed or scheduled | reserved |
 
 ## 12. Security posture
 
@@ -369,7 +399,7 @@ before the device is used for real, not a later phase.
 | 2 | **The carrier model** ([§5](#5-who-carries-it-the-carrier-question)) | A `kind` on the vehicle registry; no format change |
 | — | **Firmware language** | **Decided 2026-10-25: Rust, `esp-hal` + Embassy** ([§3.1](#31-the-firmware-stack-rust-esp-hal-embassy)) |
 | 3 | **Where `cairn-format` lives** ([§3.2](#32-how-the-code-is-shared)): the dongle repository's emulator workspace, the trail repository, or a repository of its own | **The emulator workspace in the dongle repository**, where the code and its fault matrix already are. Move it out only if a third consumer appears |
-| 4 | **Meshtastic.** (a) Cairn only; (b) speak the Meshtastic protocol for beacons; (c) keep stock Meshtastic in the second OTA slot and dual-boot | **(a), with (b) revisited in T7.** Meshtastic is GPLv3 and its protobuf definitions are too; Cairn is Blue Oak. Implementing the protocol from its specification is a licensing question to settle before a line is written, and (c) gives up OTA rollback |
+| 4 | **Meshtastic.** | **Moot while the radio is off** (owner, 2026-10-25). If LoRa ever returns: Meshtastic and its protocol definitions are GPLv3 and Cairn is Blue Oak, so implementing it is a licensing question first |
 | 5 | **How many boards.** One unit to use, one to sacrifice | **Two**, before T8 — and the second one is the first chance in the project to exercise power-loss-during-OTA without risking the only unit |
 
 ## 14. Risks
@@ -385,5 +415,5 @@ before the device is used for real, not a later phase.
 | Secure Boot V2 with a Rust image is unproven here | T8, on the sacrificial unit only |
 | Battery life far below the target | T5 is a phase of its own with a meter, before anything is called usable on a multi-day trip |
 | Phantom fixes under tree cover and in canyons | The plausibility gate re-tuned for walking, with the IMU and pedometer as the cross-check OBD speed was in the car; the server's `v_position_trusted` already exists |
-| LoRa over-claimed as a safety feature | It is documented, displayed and named as *findable, best effort* — never "emergency" or "SOS" |
+| The LoRa radio draws power although unused | Held off from boot — rail disabled or chip in cold sleep — and measured in T1 and T5 |
 | Work on the trail device starves the dongle's critical path | T-phases sit beside phases 27–29, never ahead of them; the shared-core rule means a fix found on the trail device lands in the dongle first |

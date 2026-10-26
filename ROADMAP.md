@@ -115,7 +115,7 @@ critical path, because the owner chose a `stable` release that a stranger can in
 |---|---|---|
 | [**front door**](https://github.com/ParkWardRR/cairn-driving-log-selfhosted) | This roadmap, the [contracts](contracts/), the threat and trust models, the contract and link checkers, the pin dashboard, the runner installer | Any product code |
 | [**firmware**](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | Capture, sealing, encrypted storage, the receipt-gated prune, the BLE service, the Wi-Fi and LTE uplinks, OTA, the engine-profile generator | What a reading *means*; anything needing a key the server holds |
-| [**trail device**](https://github.com/ParkWardRR/cairn-trail-device-firmware) | The handheld recorder's capture, activity detection, display and buttons, power management, the LoRa beacon and its hardware notes, in Rust on `esp-hal` and Embassy; its own Rust implementations of the `enrolment/v1` producer and the `ble/v1` offload service | `cairn-format`, the shared Rust `format/v3` crate — it lives with the emulator in the dongle repository; anything about a car |
+| [**trail device**](https://github.com/ParkWardRR/cairn-trail-device-firmware) | The handheld recorder's capture, activity detection, display and buttons, power management — including holding the unused LoRa radio off — and its hardware notes, in Rust on `esp-hal` and Embassy; its own Rust implementations of the `enrolment/v1` producer and the `ble/v1` offload service | `cairn-format`, the shared Rust `format/v3` crate — it lives with the emulator in the dongle repository; anything about a car |
 | [**iOS app**](https://github.com/ParkWardRR/cairn-ios-companion-app) | Phone GPS assist, the BLE offload relay, the signing client, the on-phone trip browser, CarPlay | Decryption of a bundle; any authority to delete one |
 | [**server**](https://github.com/ParkWardRR/cairn-vehicle-server) | Enrolment, intake, receipts, key escrow, decode, the analytical store, the app API, the local admin API | Presentation; any interpretation a module owns |
 | [**dashboard**](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard) | Every browser page, passkey and Tailnet sign-in, place naming, annotations, the web tier's deploy | Reading bundles; writing to the analytical store |
@@ -169,7 +169,7 @@ constraints](docs/threat-model.md#sharing-design-constraints-before-any-design) 
 uses the legacy device listener; the v2 → v3 data migration; multi-phone arbitration;
 multi-dongle selection; **the trail device** — [a plan](docs/trail-device-plan.md), a
 repository holding its README and hardware notes, and [`beacon/v1`](contracts/beacon/v1/README.md)
-reserved, with no firmware and no board powered on.
+reserved and deferred, with no Cairn firmware on the board yet.
 
 ### Constraints that shape every plan
 
@@ -688,7 +688,7 @@ unit.* Until one is chosen, no `stable` train can be cut.
 
 The owner's request of 2026-10-25: *a physical device for hiking and walking, and sometimes
 driving, without the OBD-II dongle.* The hardware is a **LILYGO T-Beam Supreme** — ESP32-S3,
-u-blox MAX-M10S GNSS, SX1262 LoRa at 915 MHz, BME280 barometer, QMI8658 IMU, a magnetometer, a
+u-blox MAX-M10S GNSS, an SX1262 LoRa radio (held off), BME280 barometer, QMI8658 IMU, a magnetometer, a
 PCF8563 real-time clock, an AXP2101 PMU, an SH1106 OLED and one 18650. The firmware is
 [cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware); the
 design, its alternatives and its risks are [docs/trail-device-plan.md](docs/trail-device-plan.md).
@@ -697,8 +697,8 @@ design, its alternatives and its risks are [docs/trail-device-plan.md](docs/trai
 through **`enrolment/v1` unchanged**, offloads through **`ble/v1`** and uploads by **`uplink/v1`**,
 so the server, the phone and the dashboard receive it as one more Cairn device. What is new is
 what a carried device can measure — barometric elevation, steps, heading, battery — a start and
-stop driven by movement rather than an ignition, a display, and an optional LoRa *last seen*
-beacon that is never a record. The firmware is **Rust on `esp-hal` with Embassy** (the owner's
+stop driven by movement rather than an ignition, and a display. **The LoRa radio is not used and
+is held off to save battery** (owner, 2026-10-25). The firmware is **Rust on `esp-hal` with Embassy** (the owner's
 choice, 2026-10-25); the dongle's C is not reused, but the emulator's Rust `format/v3` is — extracted
 into a shared `no_std` crate, `cairn-format`, so the emulator becomes shipping code rather than the
 lagging implementation.
@@ -708,8 +708,7 @@ lagging implementation.
 (`cairn-trail-device-firmware` was used); the **carrier model** — a `kind` (`car` | `person`) on the
 vehicle registry, so `vehicle_id` keeps its bytes and gains a meaning, *recommended*, against a
 `format/v4`; where `cairn-format` lives — the dongle repository's emulator workspace, *recommended*; whether to
-speak **Meshtastic** — no, revisited in T7, *recommended*, because Meshtastic and its protobufs are
-GPLv3 and Cairn is Blue Oak; and **buying two boards**, so one can be sacrificed to Secure Boot and
+speak **Meshtastic** — moot while the radio is off; and **buying two boards**, so one can be sacrificed to Secure Boot and
 power-loss-during-OTA, *recommended*.
 
 **Closes when:** a hike is recorded on the device with no phone present, reaches the server by
@@ -719,13 +718,13 @@ the trail — and the battery lasted as long as this section says it would.
 
 | Stage | What | Closes when | State |
 |---|---|---|---|
-| **T1** | **Bring-up.** A Cargo workspace on `esp-hal` + Embassy with the `espup` Xtensa toolchain and `espflash`; an AXP2101 driver enabling every rail; every part answering — M10 over UBX, PPS, QMI8658 on the shared SPI bus beside the SD card, magnetometer, BME280, PCF8563, SH1106, SX1262 probed without transmitting | A `bringup` build prints a reading from every part, and `docs/hardware.md`'s *read off the unit* table is filled in from the board itself | **designed** |
+| **T1** | **Bring-up.** A Cargo workspace on `esp-hal` + Embassy with the `espup` Xtensa toolchain and `espflash`; an AXP2101 driver enabling every rail; every part answering — M10 over UBX, PPS, QMI8658 on the shared SPI bus beside the SD card, magnetometer, BME280, PCF8563, SH1106; **the SX1262 held off** — its rail disabled or the chip in cold sleep — and never keyed | A full flash backup of the shipped Meshtastic image is taken first; the M10's configuration left by Meshtastic is read and cleared; then a `bringup` build prints a reading from every part, `docs/hardware.md`'s *read off the unit* table is filled in from the board itself, and a meter shows the radio-off current | **designed** |
 | **T2** | **The capture core on the S3.** `cairn-format` extracted from the emulator as a `no_std` + `alloc` crate; the **33 `format/v3` vectors passing on the host and in a self-test build on the board**; keys and the counter in flash through `sequential-storage`; a FAT layer chosen by tearing power mid-seal; GNSS from UBX-NAV-PVT, IMU summaries, baro, power; bundles sealed on the card; `TIME_OBSERVATION` from GNSS and the RTC, with the RTC set from GNSS and refused when its voltage-low flag is set | A walk around the block leaves sealed bundles that the server's structural verifier accepts with no key | **designed** |
 | **T3** | **Enrolment and the first hike on the dashboard.** `enrolment/v1` over the USB console; a `person` carrier and an assignment on the server; bundles pushed from the card with `cairn-push`; the new record types decoded; a track and a climb in the store | One hike, its date correct, its track trusted, shown on the dashboard | **designed** |
 | **T4** | **Activities.** Start, pause and stop from movement with hysteresis; the mode guess on the device and the decision on the server; marks; the four screens and the button map; the overlap link to a dongle trip | A day with a walk, a drive and a hike shows three activities of the right kinds, and every mark on the right spot | **designed** |
-| **T5** | **Battery life.** M10 power-save, light sleep between samples, deep sleep on a timer or button (the IMU interrupt is on GPIO 33, which cannot wake the S3 from deep sleep), batched card writes, display timeout, seal-before-flat | **Measured with a meter:** ≥ 24 h of 1 Hz on-foot recording and ≥ 5 days in endurance mode on a 3000 mAh 18650 — or the numbers it does reach, written here | **designed** |
+| **T5** | **Battery life.** M10 power-save, light sleep between samples, deep sleep on a timer or button (the IMU interrupt is on GPIO 33, which cannot wake the S3 from deep sleep), batched card writes, display timeout, seal-before-flat | **Measured with a meter:** ≥ 24 h of 1 Hz on-foot recording and ≥ 5 days in endurance mode on a 3000 mAh 18650 — or the numbers it does reach, written here. Other firmware sets the bar: ~105 mA for the board with the M10 tracking (SoftRF) means the 24 h target needs receiver power save; ~1.45 mA in deep sleep (LilyGO) is the floor | **designed** |
 | **T6** | **The ways home.** `ble/v1` offload through the phone (and `cmd/cairn-phone` until the app carries bundles); **`uplink/v1` over home Wi-Fi as its first implementer**; the receipt-gated prune | A bundle leaves by BLE and another by Wi-Fi, each pruned on a receipt verified on the device | **designed** |
-| **T7** | **LoRa: findable, never authoritative.** The threat model's section on broadcasting a location first; then `beacon/v1`; a home gateway forwarding beacons to the server; *last seen* on the dashboard. Off by default, sealed, within FCC Part 15 | A beacon from a trail reaches the dashboard as a *last seen* marker with its age, and is never written as a position | **designed** |
+| **T7** | **LoRa — deferred.** The owner chose on 2026-10-25 not to use the radio at all and to hold it off for battery. The *last seen* beacon design stays recorded in [`beacon/v1`](contracts/beacon/v1/README.md), reserved and deferred. Holding the radio off is T1 and T5 work, not this phase | Not scheduled | **deferred** |
 | **T8** | **Hardening on silicon that allows it.** [Phase 34](#phase-34--chip-hardening-on-replacement-hardware--planned-gated)'s procedure — Secure Boot V2 and flash encryption — run first on a **sacrificial second unit**, then on the one in use; signed OTA over Wi-Fi with power-loss-during-update exercised; revoking a lost device | The unit in use runs a secure-boot-signed, flash-encrypted image, and OTA rollback has been forced on the sacrificial unit | **designed** |
 
 ### What T1–T3 need, per repository

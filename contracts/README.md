@@ -16,12 +16,12 @@ machine.
 | [`module/v1`](module/v1/) | Modules: interpretation separated from the logging core, one package carrying its dongle, server, web and app parts. Manifest, derived columns, metrics, named queries | server, web, app and the firmware's generator consume; a module set produces | **draft**: schemas, spec and 39 vectors, one checker; nothing implements it yet |
 | [`uplink/v1`](uplink/v1/) | How a dongle with Wi-Fi or LTE uploads bundles itself: device-signed requests, a pinned server key, the relay's offer/chunk/commit/receipt | reserved for the firmware; server | **draft**: spec and vectors only, nothing implements it yet |
 | [`share/v1`](share/v1/) | A portable trip export with redaction | reserved | **reserved, draft**: no design until the threat model has a sharing section |
-| [`beacon/v1`](beacon/v1/) | A sealed LoRa position beacon: *last seen*, provisional, never a record | reserved for the trail device; a home gateway | **reserved, draft**: no design until the threat model has a section for it |
+| [`beacon/v1`](beacon/v1/) | A sealed LoRa position beacon: *last seen*, provisional, never a record | reserved for the trail device; a home gateway | **reserved, deferred**: the trail device's LoRa radio is held off (owner, 2026-10-25), so nothing is designed or scheduled |
 
 ### A second device: the trail device (planned)
 
 A handheld recorder for hiking, walking and occasional driving without the OBD-II dongle — a
-LILYGO T-Beam Supreme (ESP32-S3, u-blox MAX-M10S, SX1262 LoRa, BME280, SH1106 OLED). It is
+LILYGO T-Beam Supreme (ESP32-S3, u-blox MAX-M10S, BME280, SH1106 OLED; its SX1262 LoRa radio is held off). It is
 **Designed, nothing built**; the plan is [docs/trail-device-plan.md](../docs/trail-device-plan.md)
 and its firmware is
 [cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware).

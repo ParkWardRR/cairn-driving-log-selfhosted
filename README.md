@@ -265,7 +265,7 @@ Seven repositories, each of which can be built, tested and released alone, and o
 |---|---|
 | **this one**, [cairn-driving-log-selfhosted](https://github.com/ParkWardRR/cairn-driving-log-selfhosted) | The front door: system documentation, the [roadmap](ROADMAP.md), the shared [contracts](contracts/) and their checker, the link checker, the pin dashboard, the CI runner installer |
 | [cairn-esp32-device-firmware](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | The in-car dongle. Captures GNSS, IMU and OBD into encrypted append-only segments, seals bundles, serves BLE (phone GPS in, offload out), verifies receipts and prunes. Has a host test suite and a Rust emulator (C, Rust) |
-| [cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware) | The trail device: a handheld LILYGO T-Beam Supreme (ESP32-S3, u-blox M10 GNSS, barometer, LoRa) that records hikes, walks and dongle-less drives into the same `format/v3` bundles, in Rust on `esp-hal` + Embassy. **Designed, nothing built** — a README, hardware notes and a contract pin ([plan](docs/trail-device-plan.md)) |
+| [cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware) | The trail device: a handheld LILYGO T-Beam Supreme (ESP32-S3, u-blox M10 GNSS, barometer; its LoRa radio held off) that records hikes, walks and dongle-less drives into the same `format/v3` bundles, in Rust on `esp-hal` + Embassy. **Designed, nothing built** — a README, hardware notes and a contract pin ([plan](docs/trail-device-plan.md)) |
 | [cairn-ios-companion-app](https://github.com/ParkWardRR/cairn-ios-companion-app) | The iPhone app. Feeds the dongle phone GPS over BLE; is becoming an enrolled, signing client of the server; will relay bundles (Swift) |
 | [cairn-vehicle-server](https://github.com/ParkWardRR/cairn-vehicle-server) | Your server. Enrols devices and apps, verifies, stores and decodes bundles, issues signed receipts, serves the phone API and the analytical store (Go) |
 | [cairn-vehicle-web-dashboard](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard) | The browser dashboard. Reads the analytical store through server-side routes; signs in with a passkey or a Tailnet identity (Nuxt) |
@@ -296,7 +296,7 @@ breaking change adds a new directory (`format/v4`) rather than editing an old on
 | [`module`](contracts/module/v1/README.md) | Modules: interpretation separated from the logging core, one package carrying its dongle, server, web and app parts. Manifest, derived columns, metrics, named queries | server, web, app and the firmware's generator consume | v1 | **draft**: schemas, spec and 39 vectors; **two** implementations (`modgen` in cairn-modules, and the server's `internal/modules`), and the server runs module-owned derivations. Views, metrics and named queries are not implemented yet |
 | [`uplink`](contracts/uplink/v1/README.md) | How a dongle with Wi-Fi or LTE uploads bundles itself: device-signed requests, a pinned server key, offer/chunk/commit/receipt | reserved for the firmware; server | v1 | **draft**: spec and 15 vectors only, nothing implements it |
 | [`share`](contracts/share/v1/README.md) | A portable trip export with redaction | reserved | v1 | **reserved, draft**: no design until the threat model's sharing section is satisfied |
-| [`beacon`](contracts/beacon/v1/README.md) | A sealed LoRa position beacon from the trail device: *last seen*, provisional, never a record | reserved for the trail device; a home gateway | v1 | **reserved, draft**: no design until the threat model has a section for it |
+| [`beacon`](contracts/beacon/v1/README.md) | A sealed LoRa position beacon from the trail device: *last seen*, provisional, never a record | reserved for the trail device; a home gateway | v1 | **reserved, deferred**: the owner chose on 2026-10-25 to keep the trail device's LoRa radio off |
 
 Version and status are read from [contracts/README.md](contracts/README.md); what changed in each
 release, including unreleased documentation edits, is in [contracts/CHANGELOG.md](contracts/CHANGELOG.md).
@@ -459,7 +459,7 @@ core code" finally becomes true.
 handheld recorder for hiking and walking, on a LILYGO T-Beam Supreme
 ([cairn-trail-device-firmware](https://github.com/ParkWardRR/cairn-trail-device-firmware),
 [plan](docs/trail-device-plan.md)). It writes the same sealed bundles and reaches the same server;
-what it adds is elevation, steps, a display and an optional LoRa *last seen* beacon. Scheduled as
+what it adds is elevation, steps and a display; its LoRa radio is held off to save battery. Scheduled as
 [T1–T8](ROADMAP.md#t1t8--the-trail-device--designed), beside the dongle's phases and never ahead
 of them. Nothing is built.
 

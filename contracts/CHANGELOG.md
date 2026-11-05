@@ -5,6 +5,25 @@ publishes. Protocol directories are versioned independently of the collection ta
 
 ## Unreleased
 
+Nothing yet.
+
+## 0.10.0 (2026-11-05)
+
+**What the phone tells the dongle, and what the server tells the phone back.** Cut so the
+rewritten iPhone app, the firmware and the server can pin the same release before the first
+hardware bench of the rewrite. Every change in it is additive: nothing on any wire changes for
+a reader that ignores what it does not know, and a device or client built against
+`contracts-v0.9.0` keeps working.
+
+- `ble/v1`: `GNSS_FIX` byte 26 becomes `companion_flags`, with the `HINT` bit that lets a phone
+  hand a cold receiver a cached position without that position ever being mistaken for a
+  measurement.
+- `sync/v1`: `GET /v1/trips/{id}/track`, so a phone can draw a route without carrying an
+  embedded analytical database to read one Parquet table; and `507 quota_exceeded` written into
+  §13, where its absence had clients retrying a refusal forever.
+- `format/v3`: §6.4 Wi-Fi anchors, `GET /api/v2/wifi-anchors` — already implemented on both
+  sides since 2026-10-26 and released here.
+
 ### `sync/v1` — additive: **`GET /v1/trips/{id}/track`** (§12.1), and `507 quota_exceeded` written down
 
 The shape of one trip — trusted positions only, the companion's own fixes excluded, as runs with
@@ -68,7 +87,7 @@ and hint its GNSS receiver (`UBX-MGA-INI-POS_LLH`).
 
 Found on the M240i's drive of 2026-10-25, where a cold receiver drew nothing for eight minutes.
 Implemented by the server (`internal/wifianchors`, cairn-vehicle-server#59) and the firmware
-(`lib/cairn_wifiloc`, cairn-esp32-device-firmware#65). Not tagged.
+(`lib/cairn_wifiloc`, cairn-esp32-device-firmware#65) since 2026-10-26; released here.
 
 ## 0.9.0 (2026-10-26)
 

@@ -84,7 +84,7 @@ flowchart LR
 | **27** | [A trip you can trust](#phase-27--a-trip-you-can-trust--in-progress) | **Yes.** Firmware `6e62b44` is on the dongle (flashed 2026-10-23) and has not been driven. [What that drive must show](#what-the-next-drive-must-show) | The drive; its bundles come off by SD card until an upload path works ([firmware #55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55)); then a store column for the engine stamp |
 | **36** | [Two channels: beta and stable](#phase-36--two-channels-beta-and-stable--planned) | No | Its own work. The dashboard's `bootId → tripId` rename, which blocked it, landed 2026-10-15 |
 | **28** | [The networked dongle, finished](#phase-28--the-networked-dongle-finished--in-progress) | No | **An upload path at all** (Wi-Fi `AUTH_FAIL` at the router, LTE registration denied — [firmware #55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55)), OTA, a PKI decision, a config contract |
-| **29** | [The phone becomes the app](#phase-29--the-phone-becomes-the-app--in-progress) | No | CoreBluetooth offload wiring, an enrolment screen |
+| **29** | [The phone becomes the app](#phase-29--the-phone-becomes-the-app--in-progress) | No | **The rewrite.** Since 2026-11-04 its iOS rows are carried by [Phase 37](#phase-37--the-phone-rewritten--designed): a new app, R0 scaffold → R1 pairing → R2 priming → R3 relay |
 | **M3–M4** | [Modules reach the store and the web](#m1m7--the-module-system--in-progress) | No | Module views, `v_metric_samples`, a web consumer |
 
 Everything else — insight, sharing, data control, chip hardening — is real work with issues
@@ -293,6 +293,7 @@ independent features. Breaking changes were authorised; v2 is dead.
 | 35 | [Routes, stretches and marking a drive](#phase-35--routes-stretches-and-marking-a-drive--planned-two-decisions-open) | **planned, two decisions open** |
 | 36 | [Two channels: beta and stable](#phase-36--two-channels-beta-and-stable--planned) | **planned** — added 2026-10-10 |
 | T1–T8 | [The trail device](#t1t8--the-trail-device--in-progress) | **in progress** — T1 proven, T2 built (2026-10-26) |
+| 37 | [The phone, rewritten](#phase-37--the-phone-rewritten--designed) | **designed** — added 2026-11-04; carries Phase 29's iOS rows as R0–R6 |
 
 ---
 
@@ -409,6 +410,13 @@ The iPhone app is real: it is on TestFlight, it pairs, it feeds the dongle GPS, 
 trips, it signs into the dashboard with a passkey, and CarPlay runs on hardware. What it is not
 yet is the *relay* — the Go reference phone still carries every bundle — and no screen drives
 enrolment.
+
+> **2026-11-04: the app is being rewritten.** The owner's verdict was that pairing never
+> completes and GPS quick start does not work; an audit found why (offload could never be
+> detected, pairing failures retry forever, streaming stops when the phone locks). The iOS rows
+> below are not being worked in the old tree. They are carried, in order, by
+> [Phase 37](#phase-37--the-phone-rewritten--designed); this phase's closing condition is
+> unchanged and is what Phase 37's R3 closes on.
 
 **Closes when:** the app pairs with the dongle, offloads a bundle, uploads it under its own
 enrolled Secure-Enclave identity, hands back the receipt and the dongle prunes — with no Mac
@@ -686,6 +694,38 @@ same missing unit since it was written — or **ship `stable` with OTA as a beta
 say in `INSTALL.md` that a stable install is flashed over a cable. *Recommendation: buy the
 unit.* Until one is chosen, no `stable` train can be cut.
 
+## Phase 37 — The phone, rewritten — **designed**
+
+The owner's request of 2026-11-04: *a totally new app; sunset the old one. BLE pairing never
+works and neither does GPS quick start. Start small with the core, then build out the front
+end.* The design, the audit behind it and the decisions are in
+[docs/ios-rewrite-plan.md](docs/ios-rewrite-plan.md). Same repository and bundle id; the old tree
+retires to tag `legacy-v1` and branch `legacy`.
+
+Sub-phases run in the owner's order. Each closes on hardware with a number in a bench record
+(`docs/bench/` in the iOS repository), not on a green CI run.
+
+| Stage | What it is | Closes when | State |
+|---|---|---|---|
+| **R0** | Sunset and scaffold: `legacy` tagged, four-target package (`CairnProtocol`, `CairnKit`, `CairnRuntime`, `App`), keep-list codecs ported with their vectors, pin `contracts-v0.9.0`, build number derived | CI green on the Mac runner, TestFlight export succeeds | designed |
+| **R1** | A BLE link that pairs every time: a pure `LinkMachine`, all characteristics discovered, connect deadlines, scan fallback, a never-terminal `needsForget`, an exportable link log, a Dongle diagnostics screen | the eight-row bench matrix passes twice; firmware [#44](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/44) closed or retitled with the phone's log | designed |
+| **R2** | GPS priming: time and position hints at link-ready, streaming that survives a locked phone; firmware turns a phone fix into `MGA-INI-POS_LLH`; `ble/v1` byte 26 becomes `companion_flags` | a drive whose trip holds phone positions and whose TTFF line says the hint went; TTFF with and without the phone recorded | designed |
+| **R3** | Server connectivity: QR enrolment, pins enforced, a durable per-bundle `OffloadMachine`, background uploads, every relay error by name | [Phase 29](#phase-29--the-phone-becomes-the-app--in-progress)'s condition, no Mac; engine-off to receipt recorded for three drives | designed |
+| **R4** | Trips: `sync/v1` against the exchange vectors, trips list and detail, a server track endpoint so DuckDB leaves the phone | a trip on the phone within 60 s of its receipt, with a route | designed |
+| **R5** | Garage, `DEVICE_INFO`, CarPlay seen in the car, the in-app dashboard (owner decision), multiple dongles and phones, provisioning over BLE | per item | designed |
+| **R6** | Hardening: enrolled-challenge session auth and the shipping pairing restored | gated on firmware [#5](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/5) | designed |
+
+| Repo | Required | Issue |
+|---|---|---|
+| iOS | R0–R6 above | [#14](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/14), [#13](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/13), [#29](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/29), [#18](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/18), [#31](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/31), [#9](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/9) |
+| firmware | R2: a phone fix before the first internal fix becomes the `MGA-INI-POS_LLH` hint; a `HINT`-flagged fix is accepted past the 3 s staleness rule for hinting only; the saved-fix age compared across boots in `sensors.cpp` fixed | — |
+| front door | R2: `ble/v1` `GNSS_FIX` byte 26 = `companion_flags` (bit 0 charging, bit 1 hint) with a vector. R4: a track endpoint in `sync/v1`. Both additive; tags need the owner's go-ahead | — |
+| server | R4: `GET /v1/trips/{id}/track` from `v_position_trusted`, phone fixes excluded | — |
+
+Two decisions are the owner's and do not block R0–R4: whether the in-app dashboard web view
+returns in R5 (passkey on the LAN origin, Tailnet identity on the ts.net origin), and iOS 18
+as the floor.
+
 ## T1–T8 — The trail device — **in progress**
 
 The owner's request of 2026-10-25: *a physical device for hiking and walking, and sometimes
@@ -932,6 +972,7 @@ can be recognised as stale rather than followed.
 | 2026-10-10 | **The project gets channels.** The owner's read was that it ran further and faster than intended and parts are rough. Nothing is cancelled and `dev` does not slow down; what changes is that `stable` ships only what has evidence, `beta` carries the rest openly, and [Phase 32](#phase-32--release-engineering-flash-it-from-a-browser--planned) moves onto the critical path because `stable` is public from its first tag ([Phase 36](#phase-36--two-channels-beta-and-stable--planned)) |
 | 2026-10-25 | **A second device: the trail device.** Cairn stops being only a car logger. A handheld LILYGO T-Beam Supreme records hikes, walks and dongle-less drives into the same `format/v3` bundles, in a seventh repository, scheduled as [T1–T8](#t1t8--the-trail-device--in-progress) beside the dongle's phases. The vehicle becomes, by recommendation, a *carrier* of kind `car` or `person` — no format change |
 | 2026-10-08 | Time is collected from **every** source — GNSS, the cellular network, the phone — and the backend chooses. The manifest basis stays first-wins; the `TIME_OBSERVATION` records are the evidence trail |
+| 2026-11-04 | **The iPhone app is rewritten, not repaired.** Pairing never completed and GPS quick start never ran; the audit traced both to untestable glue in the old app. Same repository and bundle id, old tree retired to `legacy`, new app built core-first as [Phase 37](#phase-37--the-phone-rewritten--designed) R0–R6. "GPS quick start" is defined as phone time and position sent as receiver hints, measured by TTFF, because the co-processor blocks AssistNow |
 
 ## Deferred deliberately
 

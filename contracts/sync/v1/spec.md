@@ -450,6 +450,53 @@ A later record for the same entity id supersedes the earlier one (a trip whose
 bundles were reprocessed, or that grew as more of it arrived). Treat the latest
 as the truth; do not merge.
 
+## 12.1 Trip track: `GET /v1/trips/{id}/track`
+
+The shape of one trip, so a client can draw its route without reading the Parquet snapshot. A
+phone that had to carry an embedded analytical database to read one table carried a large binary
+dependency for it; this is what replaces that.
+
+`{id}` is the `trip_summary` entity id, `<vehicle_id>:<started_ms>`, so a client that has the
+trip has what it needs. `?ended_ms=<integer>` is **required** and gives the span's end, which the
+client also has from the same entity: a trip is derived rather than stored, so the server cannot
+look one up by id — and a span taken from the request still describes the right drive for a trip
+whose entity has since been [re-keyed](#a-trip-is-an-outing-which-is-why-the-id-is-not-the-boot).
+A span longer than two days is `400`.
+
+Signed or bearer. Scope is the vehicle's, with the same answer whether or not the trip exists.
+
+```json
+{ "trip_id": "<vehicle_id>:<started_ms>", "vehicle_id": "<32 hex>",
+  "started_ms": 1790000000000, "ended_ms": 1790000600000,
+  "encoding": "polyline5", "point_count": 590, "thinned": false,
+  "runs": [ { "started_ms": 1790000000000, "ended_ms": 1790000280000,
+              "count": 280, "polyline": "_p~iF~ps|U…" } ],
+  "gaps": [ { "after_ms": 1790000280000, "before_ms": 1790000300000, "duration_ms": 20000 } ] }
+```
+
+- **Trusted positions only**, from `v_position_trusted`. A route drawn from every recorded fix
+  draws the spurs that view exists to exclude.
+- **The companion's own fixes are excluded** (`source_flags` bit 5). They are a hint and a
+  diagnostic, not the car's track: a route drawn from them is a route of wherever the *phone*
+  was, which during a stop is its owner walking around a shop.
+- **Runs, not one line.** A dropout is a gap in knowledge, not a straight road. The track is a
+  list of runs with the gaps between them named, so a map never draws a line across eight
+  minutes of no signal. A silence longer than 30 s is a gap; the receiver writes at about 1 Hz
+  when it has a fix.
+- **`polyline5`** is the encoded-polyline format at precision 5 (about 1.1 m): deltas, zig-zag
+  encoded, five bits at a time with a continuation bit, offset by 63. It is roughly a tenth the
+  size of the same points as JSON numbers. A reader that does not know an `encoding` value must
+  refuse the body rather than guess.
+- **`thinned: true`** means the track was reduced to fit a cap. The shape is right and the sample
+  rate is not, so a client showing anything per-point must notice. Truncating instead would read
+  as a trip that stopped somewhere it did not.
+- A trip with no trusted positions is `200` with no runs and no gaps, **not** a `404`: "this
+  drive has no shape" is an answer, and a client should show the numbers and no map.
+
+Errors: `400 bad_request` (the id is not `<vehicle_id>:<started_ms>`, `ended_ms` is missing or
+runs backwards, or the span is too long) · `403 scope` · `404 not_found` (this server has no
+analytical store) · `502 upstream` (it has one and it did not answer).
+
 ## 13. Bundle relay (the phone uploads on the dongle's behalf)
 
 The enrolled phone can carry the dongle's sealed bundles to the server
@@ -501,7 +548,11 @@ up another's. Re-offering a bundle the client already has outstanding, or one th
 receipt (`receipt_available: true`), never counts, and a slot frees when its bundle is committed
 or its offer record is swept. No `Retry-After`, as with `429 rate_limited`. The limit's value is
 the server's choice, not part of the contract: key off the code, not a number) ·
-`429 rate_limited` back off.
+`429 rate_limited` back off ·
+`507 quota_exceeded` (the device is out of its storage allowance on this server; **not
+retryable** — nothing the client can do changes it, and re-offering the same bundle costs a
+drive's worth of radio. It is in the `5xx` range and is **not** a server failure: a client that
+treats every `5xx` as "retry with backoff" will retry this one forever).
 A refused or quarantined bundle is **never** receipted, so it stays on the dongle.
 
 **Check for `bad_manifest_signature` before applying any rule that reads a `401` as "this

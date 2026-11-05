@@ -5,6 +5,20 @@ publishes. Protocol directories are versioned independently of the collection ta
 
 ## Unreleased
 
+### `sync/v1` — additive: **`GET /v1/trips/{id}/track`** (§12.1), and `507 quota_exceeded` written down
+
+The shape of one trip — trusted positions only, the companion's own fixes excluded, as runs with
+the gaps between them named and each run an encoded polyline. It exists so a phone can draw a
+route without reading the Parquet snapshot, which it could only do by carrying an embedded
+analytical database for one table (front door `docs/ios-rewrite-plan.md`, decision D4).
+
+Nothing existing changes: a new route, no new entity, no change to `pull`, `push` or the relay.
+
+Also in §13: `507 quota_exceeded` was already what the server answers when a device is out of
+its storage allowance, and the errors list did not say so. It is in the `5xx` range and is not a
+server failure, so a client applying the ordinary "retry every `5xx` with backoff" rule retries
+it forever. Written down with the warning attached.
+
 ### `ble/v1` — additive: `GNSS_FIX` byte 26 is **`companion_flags`**
 
 Byte 26 was the low half of a two-byte `reserved`, and both sides were already using it: the app

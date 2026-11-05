@@ -44,7 +44,39 @@ This spec is normative here, in the Cairn contracts (`contracts/ble/v1/`). The i
 | 21 | 1 | `validity_flags` | u8 | b0 position, b1 altitude, b2 speed, b3 course |
 | 22 | 2 | `sample_age_ms` | u16 | `now − CLLocation.timestamp` at write time |
 | 24 | 2 | `seq` | u16 | monotonic, wrapping; duplicate detection + ack |
-| 26 | 2 | `reserved` | u16 | 0 |
+| 26 | 1 | `companion_flags` | u8 | b0 charging, b1 hint; all other bits 0 (below) |
+| 27 | 1 | `reserved` | u8 | 0 |
+
+### `companion_flags` (byte 26)
+
+The phone's own state, which the receiver cannot see. Added in `contracts-v0.9.1`: byte 26 was
+the low half of a two-byte `reserved`, and both sides were already using it — the app wrote the
+charging bit and the firmware read it — so this writes down what shipped rather than changing
+anything on the wire. A reader that does not know a bit ignores it; a writer leaves unknown bits
+zero.
+
+| Bit | Name | Meaning |
+|---:|---|---|
+| 0 | `CHARGING` | The phone is on power. The device uses it to decide whether a long BLE session is fair to the phone's battery |
+| 1 | `HINT` | **Not a measurement.** A cached fix, sent once per link so the receiver has somewhere to start. See below |
+| 2–7 | — | Reserved, zero |
+
+**`HINT` frames.** The dongle's receiver sits under the dash and starts cold. A phone that has
+just been in the owner's pocket knows roughly where the car is, and handing the receiver that
+position shortens the time to first fix. But the phone's last fix is usually minutes old, and
+every other rule in this protocol exists to stop an old fix being mistaken for a current one.
+`HINT` is how both can be true:
+
+- A `HINT` frame is **accepted regardless of `sample_age_ms`**, and only for hinting. The
+  staleness rule below does not apply to it.
+- A `HINT` frame is **never recorded as a position sample** and never becomes `last_gnss`, never
+  clears `DEGRADED_GNSS` and never influences trip scoring. It may be recorded as a hint event.
+- `sample_age_ms` saturates at `0xFFFF`, which on a `HINT` frame means "65.535 s or older" and
+  carries no further information. It is still filled in, because it is the one thing that says
+  how little the hint is worth.
+- `validity_flags` b0 must be set: a hint with no position is nothing. The other bits are
+  whatever the cached fix had, which for a parked phone is usually no speed and no course.
+- At most one `HINT` per receiver start. A device that has already accepted a fix ignores it.
 
 ### `fix_type` mapping
 
@@ -90,12 +122,12 @@ Writes larger than 31 bytes or empty are refused silently and logged on the devi
 
 | Rule | Where | Value |
 |---|---|---|
-| Discard cached/old locations before encoding | iOS | `abs(now − location.timestamp) > 2 s` |
-| Reject late arrivals | firmware | `sample_age_ms > CAIRN_PHONE_GNSS_STALE_MS` (3000) |
+| Discard cached/old locations before encoding | iOS | `abs(now − location.timestamp) > 2 s`, **except a `HINT` frame**, which is cached on purpose |
+| Reject late arrivals | firmware | `sample_age_ms > CAIRN_PHONE_GNSS_STALE_MS` (3000), **except a `HINT` frame**, which is used for hinting and never stored |
 | Timestamp mapping | firmware | `fact.monotonic_ms = millis() − sample_age_ms` |
 | Mapping error bound | | BLE latency (~10–30 ms) + phone measurement-to-send delay |
 
-BLE receipt time is not measurement time. A cached fix arriving after reconnect must not become `last_gnss`, clear `DEGRADED_GNSS`, or influence trip scoring.
+BLE receipt time is not measurement time. A cached fix arriving after reconnect must not become `last_gnss`, clear `DEGRADED_GNSS`, or influence trip scoring. A `HINT` frame is the one way to send a cached fix deliberately, and it is subject to exactly the same prohibition: it may steer the receiver and it may be logged, and it may do nothing else.
 
 ## `GNSS_QUALITY` (8 bytes, internal receiver)
 

@@ -5,6 +5,34 @@ publishes. Protocol directories are versioned independently of the collection ta
 
 ## Unreleased
 
+### `ble/v1` — additive: `GNSS_FIX` byte 26 is **`companion_flags`**
+
+Byte 26 was the low half of a two-byte `reserved`, and both sides were already using it: the app
+writes the charging bit and the firmware reads it into `s_companion_flags`. This writes down what
+shipped, and adds one bit.
+
+- **b0 `CHARGING`** — the phone is on power. In use on both sides since the BLE bring-up.
+- **b1 `HINT`** — the frame is a cached position, sent once at link-ready so a cold receiver has
+  somewhere to start. A `HINT` frame is accepted regardless of `sample_age_ms` **and is never
+  recorded as a position sample**: it may steer the receiver and be logged, and nothing else.
+  The staleness table gains the exception explicitly, because every other rule in `ble/v1`
+  exists to stop an old fix being read as a current one, and this is the one deliberate
+  exception to it.
+- Byte 27 stays `reserved`, now one byte wide.
+
+Nothing on the wire changes: a frame with `companion_flags == 0` is byte-identical to the frame
+`contracts-v0.9.0` describes, and a device that ignores byte 26 behaves as it did. New golden
+vectors `position hint from a cached fix` and `charging`, derived field by field from the spec
+table rather than from either implementation, and checked by reproducing the six existing
+vectors exactly from the same derivation.
+
+Why now: the dongle's receiver sits behind the Freematics co-processor and returns no UBX
+replies, so AssistNow through the phone is blocked and a hint cannot be acknowledged. Position
+and time are what the firmware already hints from weaker sources — Wi-Fi anchors above, and its
+own last saved fix — and a phone that has just been in the owner's pocket has a better one. The
+measure is the time-to-first-fix line the firmware logs per receiver start (front door
+`docs/ios-rewrite-plan.md`, decision D3, phase R2).
+
 ### `format/v3`: additive. **§6.4 Wi-Fi anchors**, `GET /api/v2/wifi-anchors`
 
 The access-point positions a server learned from `WIFI_SCAN` learning scans (`v_wifi_ap_learned`),

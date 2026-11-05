@@ -1,7 +1,7 @@
 # iPhone app rewrite plan
 
-**Status: Designed.** Nothing of the new app is built. This document is the design and the
-reasoning; the schedule is [ROADMAP.md, Phase 37](../ROADMAP.md#phase-37--the-phone-rewritten--designed),
+**Status: in progress.** R0 and R1 are built and neither is Proven — there was no dongle on the
+Mac. This document stays the design and the reasoning; the schedule is [ROADMAP.md, Phase 37](../ROADMAP.md#phase-37--the-phone-rewritten--in-progress),
 with sub-phases R0–R6. The app lives in
 [cairn-ios-companion-app](https://github.com/ParkWardRR/cairn-ios-companion-app).
 

@@ -25,13 +25,18 @@ Byte 26 was the low half of a two-byte `reserved`, and both sides were already u
 writes the charging bit and the firmware reads it into `s_companion_flags`. This writes down what
 shipped, and adds one bit.
 
-- **b0 `CHARGING`** — the phone is on power. In use on both sides since the BLE bring-up.
-- **b1 `HINT`** — the frame is a cached position, sent once at link-ready so a cold receiver has
+- **b0 `CHARGING`** — the phone is on power. In use on both sides since the BLE bring-up: the
+  device reads it as permission to sample harder, because the usual reason to hold back is the
+  phone's battery and that reason is gone.
+- **b1 `HINT`** — the frame is a cached position, sent once per link so a cold receiver has
   somewhere to start. A `HINT` frame is accepted regardless of `sample_age_ms` **and is never
   recorded as a position sample**: it may steer the receiver and be logged, and nothing else.
   The staleness table gains the exception explicitly, because every other rule in `ble/v1`
   exists to stop an old fix being read as a current one, and this is the one deliberate
-  exception to it.
+  exception to it. The writer's rule (one per link) and the device's (accept only before the
+  first fix of a receiver start, and prefer the most accurate hint rather than the latest) are
+  stated apart, because they are rules for different actors and conflating them is how a device
+  ends up holding the worst of three available positions.
 - Byte 27 stays `reserved`, now one byte wide.
 
 Nothing on the wire changes: a frame with `companion_flags == 0` is byte-identical to the frame

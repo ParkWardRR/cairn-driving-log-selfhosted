@@ -468,7 +468,7 @@ Signed or bearer. Scope is the vehicle's, with the same answer whether or not th
 ```json
 { "trip_id": "<vehicle_id>:<started_ms>", "vehicle_id": "<32 hex>",
   "started_ms": 1790000000000, "ended_ms": 1790000600000,
-  "encoding": "polyline5", "point_count": 590, "thinned": false,
+  "encoding": "polyline5", "point_count": 590,
   "runs": [ { "started_ms": 1790000000000, "ended_ms": 1790000280000,
               "count": 280, "polyline": "_p~iF~ps|U…" } ],
   "gaps": [ { "after_ms": 1790000280000, "before_ms": 1790000300000, "duration_ms": 20000 } ] }
@@ -487,9 +487,12 @@ Signed or bearer. Scope is the vehicle's, with the same answer whether or not th
   encoded, five bits at a time with a continuation bit, offset by 63. It is roughly a tenth the
   size of the same points as JSON numbers. A reader that does not know an `encoding` value must
   refuse the body rather than guess.
-- **`thinned: true`** means the track was reduced to fit a cap. The shape is right and the sample
-  rate is not, so a client showing anything per-point must notice. Truncating instead would read
-  as a trip that stopped somewhere it did not.
+- **`thinned`** is present and `true` only when the track was reduced to fit a cap, and is
+  **absent** otherwise. The shape is right and the sample rate is not, so a client showing
+  anything per-point must notice. Truncating instead would read as a trip that stopped somewhere
+  it did not.
+- **A run may hold a single point.** That is a place the car was, not a line, and a client
+  drawing routes should skip it rather than draw a zero-length stroke. `count` says which it is.
 - A trip with no trusted positions is `200` with no runs and no gaps, **not** a `404`: "this
   drive has no shape" is an answer, and a client should show the numbers and no map.
 

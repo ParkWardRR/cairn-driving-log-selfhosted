@@ -49,15 +49,14 @@ This spec is normative here, in the Cairn contracts (`contracts/ble/v1/`). The i
 
 ### `companion_flags` (byte 26)
 
-The phone's own state, which the receiver cannot see. Added in `contracts-v0.9.1`: byte 26 was
-the low half of a two-byte `reserved`, and both sides were already using it — the app wrote the
-charging bit and the firmware read it — so this writes down what shipped rather than changing
-anything on the wire. A reader that does not know a bit ignores it; a writer leaves unknown bits
-zero.
+The phone's own state, which the receiver cannot see. Byte 26 was the low half of a two-byte
+`reserved`, and both sides were already using it — the app wrote the charging bit and the
+firmware read it — so most of this writes down what shipped rather than changing anything on the
+wire. A reader that does not know a bit ignores it; a writer leaves unknown bits zero.
 
 | Bit | Name | Meaning |
 |---:|---|---|
-| 0 | `CHARGING` | The phone is on power. The device uses it to decide whether a long BLE session is fair to the phone's battery |
+| 0 | `CHARGING` | The phone is on power. The device reads it as permission to sample harder: in the reference firmware a charging phone during a trip forces the highest sampling dynamics, because the usual reason to hold back is the phone's battery and that reason is gone |
 | 1 | `HINT` | **Not a measurement.** A cached fix, sent once per link so the receiver has somewhere to start. See below |
 | 2–7 | — | Reserved, zero |
 
@@ -76,7 +75,19 @@ every other rule in this protocol exists to stop an old fix being mistaken for a
   how little the hint is worth.
 - `validity_flags` b0 must be set: a hint with no position is nothing. The other bits are
   whatever the cached fix had, which for a parked phone is usually no speed and no course.
-- At most one `HINT` per receiver start. A device that has already accepted a fix ignores it.
+
+Two different actors, two different rules, which is why they are stated apart:
+
+- **A writer sends at most one `HINT` per link**, as early as it has a cached position, and
+  none at all once the device reports a fix. Sending a stream of them would be sending a stream
+  of stale positions, which is the thing the rest of this protocol prevents.
+- **A device accepts a hint only before its first accepted fix of the current receiver start,
+  and may accept more than one.** It is not limited to one: a receiver start can be offered a
+  position by the device's own last saved fix, by a Wi-Fi scan and by a phone, and which of
+  them the receiver ends up holding should be decided by **stated accuracy**, not by which
+  arrived last. A device that takes only the first hint of a start is taking the worst one
+  whenever a better one follows; a device that takes the last is letting a phone that happened
+  to connect late overwrite a sharper fix.
 
 ### `fix_type` mapping
 

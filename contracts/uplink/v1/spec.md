@@ -102,6 +102,14 @@ ledger on `offer` and `commit`, which is how the dashboard shows which path move
 conditioned on it, and the server must not trust it for anything but display. An unrecognised
 value is `400`. BLE relayed bundles keep recording the phone as the path.
 
+> **Non-normative deployment note, 2026-11-05.** The Cairn dongle no longer uses Wi-Fi: it has
+> one radio, and a Wi-Fi slot takes the BLE stack down with it, so the shipping firmware builds
+> with `CAIRN_WIFI_UPLINK=0`. `path=wifi` and `slot` remain in this contract and remain valid —
+> ledger rows written before that date mean exactly what they always meant, and a `wifi` offer
+> from any other implementation is still well-formed and must still be accepted. Nothing in
+> Cairn emits them today. This records a deployment choice, not a wire-format change: no version
+> bump is implied and no vector changes.
+
 ## 3. Transport security: the server's key is pinned in firmware
 
 TLS 1.3 only. The firmware **pins the SHA-256 of the SubjectPublicKeyInfo** of the server's

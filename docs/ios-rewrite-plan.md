@@ -209,7 +209,7 @@ error with its numeric code, time in state, Retry, Forget, Export Log.
 | App killed | swipe the app away; the dongle re-advertises | relaunched by iOS, ready in under 10 s |
 | Phone stale | phone forgets the device, dongle keeps its bond | the firmware drops its bond on PINKEY_MISSING; ready after one retry |
 | Dongle stale | dongle `CLEAR bonds`, phone keeps its bond | `needsForget` within 3 attempts, message names the fix |
-| Wi-Fi slot | dongle drops BLE for a Wi-Fi slot | `backoff`, then ready when advertising returns, no user action |
+| ~~Wi-Fi slot~~ | **retired 2026-11-05** — Wi-Fi is off on the dongle, so there are no slots to survive. The app's backoff behaviour is still tested against `FakeCentral`; what is gone is the hardware row | — |
 | Locked phone | lock the phone while ready; reboot the dongle | ready again with the screen off |
 | Weak link | dongle 10 m away behind a wall | discovery fails, `backoff` with RSSI shown, never `needsForget` |
 
@@ -301,8 +301,15 @@ was offline during the upload.
 
 In whatever order is useful once R1–R4 are Proven: Garage and vehicle profile from the old
 models; `DEVICE_INFO` shown; the CarPlay HUD from `HUDBuilder`, **seen running in the car**; the
-in-app dashboard per D9; multiple dongles and phones (iOS #26, #19); Wi-Fi/LTE provisioning over
-BLE (#28) once its contract and firmware exist; the share sheet (#22) and DriveMark (Phase 35).
+in-app dashboard per D9; multiple dongles and phones (iOS #26, #19); LTE provisioning over
+BLE (#28) once its contract and firmware exist — no Wi-Fi credentials to carry since 2026-11-05,
+which removes the hardest part of it; the share sheet (#22) and DriveMark (Phase 35).
+
+**Also R5, new 2026-11-05: the phone audits the LTE path.** On a ready link, reconcile the
+server's view of this device against the dongle's delivery ledger — re-offer over BLE anything
+the dongle marked delivered that the server never committed, prune anything the server holds
+against its receipt, and show the owner when the two disagree. LTE is unattended by definition,
+so the attended path is the only thing that can check it.
 
 ### R6 — Hardening
 

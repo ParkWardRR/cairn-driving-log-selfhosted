@@ -83,7 +83,7 @@ flowchart LR
 |---|---|---|---|
 | **27** | [A trip you can trust](#phase-27--a-trip-you-can-trust--in-progress) | **Yes.** Firmware `6e62b44` is on the dongle (flashed 2026-10-23) and has not been driven. [What that drive must show](#what-the-next-drive-must-show) | The drive; its bundles come off by SD card until an upload path works ([firmware #55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55)); then a store column for the engine stamp |
 | **36** | [Two channels: beta and stable](#phase-36--two-channels-beta-and-stable--planned) | No | Its own work. The dashboard's `bootId → tripId` rename, which blocked it, landed 2026-10-15 |
-| **28** | [The networked dongle, finished](#phase-28--the-networked-dongle-finished--in-progress) | No | **An upload path at all** (Wi-Fi `AUTH_FAIL` at the router, LTE registration denied — [firmware #55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55)), OTA, a PKI decision, a config contract |
+| **28** | [The networked dongle, finished](#phase-28--the-networked-dongle-finished--in-progress) | No | **Two transports now, BLE and LTE — Wi-Fi dropped 2026-11-05.** LTE to carry a bundle unattended on the new 360 MB SIM ([firmware #55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55)), the phone to reconcile what it sent, OTA, a PKI decision, a config contract |
 | **29** | [The phone becomes the app](#phase-29--the-phone-becomes-the-app--in-progress) | No | **The rewrite.** Since 2026-11-04 its iOS rows are carried by [Phase 37](#phase-37--the-phone-rewritten--in-progress): a new app, R0 scaffold → R1 pairing → R2 priming → R3 relay |
 | **M3–M4** | [Modules reach the store and the web](#m1m7--the-module-system--in-progress) | No | Module views, `v_metric_samples`, a web consumer |
 
@@ -139,7 +139,7 @@ The original single repository is preserved read-only as
 | **Everything per trip, in the dashboard** | **2026-10-15, dashboard `ee66412` deployed.** A trip that spans several boots gets one set of charts, stops, GPS comparison, marks and statistics on one clock; tracks read only trusted fixes; a trip ends at its last fix (the end-of-trip bug is fixed). The acceptance suite is green |
 | **Enrolment and key escrow** | The real device's sealed enrolment blob was unsealed by the server and its storage root escrowed as version 1, byte-identical to the Go reference. The dongle moves between the 428i and the M240i: a garage of open assignments, one per car, chosen by VIN (enrolment v1 `SET garage`) |
 | **The BLE offload chain** | 2026-10-06: nine bundles pulled over BLE in 62 s, nine receipts verified against the firmware-pinned key **on the device**, nine bundles pruned. Carried by `cmd/cairn-phone`, the Go reference phone, on macOS |
-| **Wi-Fi uplink** | 2026-10-07: four bundles delivered over mTLS and pruned on verified receipts (`env:cairn-wifiup`) |
+| **Wi-Fi uplink** | 2026-10-07: four bundles delivered over mTLS and pruned on verified receipts (`env:cairn-wifiup`). **Retired 2026-11-05** — it worked, and it cost BLE the radio to do it. Kept here because it happened, not because it is a path |
 | **LTE uplink** | 2026-10-07: attached to T-Mobile US (PLMN 311480, −77 dBm), TLSv1.2 ECDHE-ECDSA-AES128-GCM through the public Funnel ingress in 5.2 s, 158,906 bytes uploaded, receipt verified, bundle pruned. Then a whole trip unattended: 1,295,714 B in 386 s, 0.23% overhead |
 | **The public Funnel ingress, from outside the tailnet** | 2026-10-10: `cairn.fable-minnow.ts.net:8443` answers with the real server certificate (`CN=cairn.alpina.casa`, issued by `Cairn Private CA`), proving tailscaled forwards into the server rather than competing with it for the port |
 | **TLS verification, from the failing side** | `env:cairn-tlsneg` pins a wrong CA and the handshake is **rejected** (NOT_TRUSTED, `-0x2700`) while the correct CA verifies. Server side: no client certificate → refused; the right CommonName from an untrusted CA → refused, because identity rests on the chain and not the name |
@@ -207,7 +207,7 @@ open; `beta-ok` means it ships in `beta` and the feature it touches stays out of
 
 | Repo | Issue | Defect | Severity | State |
 |---|---|---|---|---|
-| firmware | [#55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55) | **No path uploads a bundle from the car** (found 2026-10-23). Wi-Fi association to the home network fails at the router — `AUTH_FAIL`, `HANDSHAKE_TIMEOUT` — although the compiled credentials match, after working until 2026-10-15; LTE registration is denied by the network (SIM or plan); BLE offload to a Mac cannot hold the link | `blocker` | Open. **Workaround:** read the SD card on a Mac and push with the server's `cairn-push` over device mTLS. Not the coexistence failure of [#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31): that one is worked around, and `AUTH_FAIL` is the access point refusing |
+| firmware | [#55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55) | **No path uploads a bundle from the car** (found 2026-10-23). Wi-Fi `AUTH_FAIL` at the router; LTE registration denied by the network; BLE offload to a Mac could not hold the link | `blocker` | **Narrowed 2026-11-05.** Wi-Fi is no longer a path, so the `AUTH_FAIL` half is closed by decision rather than by fix. Two things remain: LTE registration, now re-testable on the newly fitted 360 MB TripplePlay SIM, and BLE, which a phone — not a Mac — has now held in `ready` ([#71](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/71) fixed, [#68](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/68) improving). **Workaround meanwhile:** read the card and push with `cairn-push` |
 | firmware | [#11](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/11) | **No OTA on the dongle**, so every firmware change needs it on USB — which is how `6e62b44` reached it on 2026-10-23 | `blocker` | Open. The install path is written and host-verified, never run on hardware |
 | firmware | [PR #54](https://github.com/ParkWardRR/cairn-esp32-device-firmware/pull/54) | **Drives were lost 2026-10-15 → 2026-10-23.** The co-processor link was shared unlocked between two tasks; garbled supply readings (about half of them while driving) kept the engine-on dwell from completing, so the OBD bus never opened, the start score stayed at 1.00 < 1.50 on GNSS alone, and smooth driving ended trips after seconds — one 8 s trip from five drives in a 22.8 h boot | `blocker`, cleared by the drive gate | **Fixed, not proven.** `6e62b44`: a link mutex, a cached supply reading sampled by the owning task, and a new trip detector (debounced rail, engine-running evidence, start hysteresis, positive stop evidence). Flashed 2026-10-23, not yet driven |
 | server | — | **Old bundles can name the wrong boot.** Bundles written by firmware before `f940c84` can carry a later boot's clock under an earlier `boot_id`; one trip in the live store reports the wrong boot | `known` | A data leftover, not a live defect: `f940c84` seals a capture from an earlier boot at boot instead of extending it. The affected bundles are sealed and are not rewritten (invariant 1) |
@@ -220,8 +220,8 @@ open; `beta-ok` means it ships in `beta` and the feature it touches stays out of
 | firmware | [#34](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/34) | A Wi-Fi slot is never announced to the phone, and the check-in is a no-op | `beta-ok` | Open. Both are unreleased `ble/v1` fields |
 | firmware | [#33](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/33) | Static DRAM is the binding constraint; the remaining manifest buffers need a platform alloc shim | `known` | Open |
 | firmware | [#32](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/32) | Lowering `CAIRN_MAX_CHUNKS` strands already-sealed bundles; one 1.17 MB bundle is stranded now | `known` | Open. The constant is part of the on-card compatibility surface: raise freely, lower only knowing what is already sealed |
-| firmware | [#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31) | Wi-Fi cannot associate while the BLE controller is initialised — `HANDSHAKE_TIMEOUT` after 25 s, measured three times | `beta-ok` | **Worked around 2026-10-14** in `2e06252`: the slot stops the BLE controller with `deinit(false)`, which keeps the GATT objects and so avoids the `deinit(true)` panic, and the commit records three bundles delivered over Wi-Fi. Open until a drive shows it repeatedly. Wi-Fi fails again since 2026-10-15 for a different reason — [#55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55) |
-| firmware | [#6](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/6) | A Wi-Fi password may remain readable in the dongle's flash | `blocker` | Open. Rotate, erase or encrypt |
+| firmware | [#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31) | Wi-Fi cannot associate while the BLE controller is initialised — `HANDSHAKE_TIMEOUT` after 25 s, measured three times | `known` | **Moot 2026-11-05: Wi-Fi is dropped.** Worth keeping as the record of why. The 2026-10-14 workaround (`deinit(false)`, keeping the GATT objects to dodge a `deinit(true)` panic) is what later left the dongle advertising an empty payload after every slot — [#71](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/71). A workaround for a coexistence problem produced a worse problem than the one it solved, which is the argument for having only one radio user |
+| firmware | [#6](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/6) | A Wi-Fi password may remain readable in the dongle's flash | `known` | **Downgraded 2026-11-05** from `blocker`: nothing reads it any more, so it no longer gates a transport. Still a live secret in flash and still to be erased — on the next flash that touches NVS. The LTE APN replaces it as the credential that matters |
 | firmware | [#5](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/5) | The local BLE passkey is weak, and a session is not authenticated by an enrolled challenge | `blocker` | Open. The shipping pairing (MITM + DISPLAY_ONLY) must be restored with it |
 | server | [#42](https://github.com/ParkWardRR/cairn-vehicle-server/issues/42) | `cairn-phone` nil-pointer dereference during BLE service discovery | `beta-ok` | Open — recovered at runtime, still a defect |
 | firmware | — | **Seven legacy v2 bundles (4.76 MB) are stranded.** Their manifests are v2 and both ends are v3, so no transport can move them. They sort first, so a transfer budget must not be charged for a bundle that failed to open | `known` | A prov-console command to drop pre-v3 bundles is chosen and not built ([#32](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/32)) |
@@ -362,26 +362,50 @@ Each line is checked in the store, not in the serial log:
 
 ## Phase 28 — The networked dongle, finished — **in progress**
 
-The dongle is a network device: LTE carried bundles unattended on 2026-10-07, and Wi-Fi is proven
-in a dedicated environment. Three things kept it from being finished — Wi-Fi could not coexist
-with BLE, the network credentials sit in plaintext flash, and nothing a user sets can reach the
-device. **Since 2026-10-23 there is a fourth, ahead of them: neither radio uploads at all**
-([firmware #55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55)), and with no
-OTA ([firmware #11](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/11)) every
-attempt at a fix is another USB flash.
+**Two transports, not three (owner, 2026-11-05): BLE and LTE. Wi-Fi is dropped.**
 
-**Closes when:** a user can add a Wi-Fi network and a monthly data cap from the web UI or the
-phone, the dongle receives both sealed to its own key, enforces the cap, and uses whichever
-transport is available — without a credential being readable from a flash dump.
+The ESP32 has one radio and Wi-Fi and BLE cannot both hold it. Every Wi-Fi slot and every home
+scan tears the whole BLE stack down — measured on 2026-11-05 firing about every 30 s with a
+bundle waiting, so the phone watched the dongle vanish and return, and a bond that had not
+reached NVS went with it. The workaround for that coexistence
+([#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31)) is itself what left
+the dongle advertising an empty payload after a slot, undiscoverable until a reboot
+([#71](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/71)). Wi-Fi was spending
+the one path that works on attempting one that has not worked since 2026-10-15
+([#55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55): `AUTH_FAIL` at the
+router).
+
+So the dongle keeps its radio on BLE and reaches the server itself over LTE. Wi-Fi is off at
+compile time (`CAIRN_WIFI_UPLINK=0`, `CAIRN_WIFI_SCAN=0`), which retires three defects' worth of
+work and drops the image from 84.3% to 60.1% of flash.
+
+**BLE is also how LTE is checked.** The two paths stop being alternatives that happen to share a
+server: the phone becomes the auditor of the unattended one. When the phone is next in range it
+asks the server what it holds for this device and reconciles that against what the dongle believes
+it sent — a bundle the dongle marked delivered but the server never committed is re-offered over
+BLE, and a bundle the server does hold is pruned from the card against its receipt. That closes
+the one hole in an unattended transport, which is that nobody was checking it, and it costs
+little: both ends already speak `sync/v1`, and the dongle already refuses to prune without a
+server-signed receipt.
+
+**The data budget is small and real.** The fitted SIM is a TripplePlay with **360 MB**, expiring
+2027-10-20 — not the 2 GB earlier notes assumed. LTE is therefore the exception path, for drives
+that end away from the phone, and the cap work below stops being a nicety.
+
+**Closes when:** a user can set a monthly data cap from the web UI or the phone, the dongle
+receives it sealed to its own key and enforces it, LTE carries a bundle unattended, and the phone
+afterwards reconciles what the server holds against what the dongle sent — without a credential
+being readable from a flash dump.
 
 | Repo | Required | Issue |
 |---|---|---|
-| firmware | **An upload path, first.** As of 2026-10-23 none works: Wi-Fi association fails at the router with `AUTH_FAIL` / `HANDSHAKE_TIMEOUT` on matching credentials (it worked until 2026-10-15), and LTE registration is denied by the network — a SIM or plan question before it is a firmware one. Until then bundles leave on the SD card | [#55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55) |
-| firmware | **Wi-Fi/BLE coexistence.** `NimBLEDevice::deinit(true)` let Wi-Fi associate, but the next scan panicked `InstrFetchProhibited` at PC 0. **Worked around 2026-10-14** (`2e06252`): `deinit(false)` stops the controller and keeps the GATT objects, and Wi-Fi delivered bundles with BLE re-initialising cleanly. Built; a drive has to show it holds | [#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31) |
+| firmware | **LTE has to carry a bundle unattended again.** Registration was denied by the network on 2026-10-23 — a SIM or plan question before a firmware one. A TripplePlay SIM with 360 MB is now fitted and activated, so this is re-testable; until it passes, bundles leave over BLE or on the card | [#55](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/55) |
+| firmware | **The phone reconciles what LTE sent.** On a ready BLE link, pull the server's view for this device and compare it with the dongle's own delivery ledger: re-offer anything the dongle marked sent that the server never committed, prune anything the server holds against its receipt | new |
 | firmware | **Where the credential key lives between boots.** RAM-only costs autonomy; NVS re-creates the plaintext secret under another name; an unwrap over the bonded BLE link has no wire format, replay rule or no-phone-for-a-week recovery yet | [#18](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/18) |
-| firmware | Rotate or erase the residual Wi-Fi password in flash | [#6](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/6) |
-| firmware | LTE data accounting and limits, enforced on the dongle: daily, monthly and per-trip caps, roaming, pause | [#21](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/21) |
-| firmware | Announce the Wi-Fi slot, and make the check-in real | [#34](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/34) |
+| firmware | **LTE data accounting and limits**, enforced on the dongle: daily, monthly and per-trip caps, roaming, pause. Now load-bearing rather than a nicety — the plan is 360 MB, not 2 GB | [#21](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/21) |
+| firmware | ~~Wi-Fi/BLE coexistence~~ — **moot.** Wi-Fi is off at compile time; the one radio stays on BLE | [#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31) |
+| firmware | ~~Rotate or erase the residual Wi-Fi password in flash~~ — **still do it**, but it is no longer a transport blocker: nothing reads it. Erase on the next flash that touches NVS | [#6](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/6) |
+| firmware | ~~Announce the Wi-Fi slot~~ — **moot**, there are no slots. The check-in is still a no-op and still wanted | [#34](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/34), [#69](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/69) |
 | firmware | A platform alloc shim, so the remaining manifest buffers leave static DRAM | [#33](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/33) |
 | firmware | A prov-console command to drop pre-v3 bundles, so the stranded v2 bundles stop heading the queue | [#32](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/32) |
 | front door | `contracts/config/v1`: device configuration and usage reports, sealed to the device key | [#27](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/issues/27) |
@@ -392,10 +416,11 @@ transport is available — without a credential being readable from a flash dump
 | server | A device uplink endpoint — device-authenticated, same semantics as the relay — then retire the `:8443` mTLS listener, device certificates and the network OTA endpoints | [#21](https://github.com/ParkWardRR/cairn-vehicle-server/issues/21), [front door #7](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/issues/7) |
 | server | Digest ingest: show a digest as a provisional trip, supersede it with the full bundle, account for usage | [#25](https://github.com/ParkWardRR/cairn-vehicle-server/issues/25) |
 | server | Fix the `cairn-phone` nil dereference in BLE discovery | [#42](https://github.com/ParkWardRR/cairn-vehicle-server/issues/42) |
-| dashboard | Network and LTE settings: Wi-Fi networks, consumption, limits and alerts. The web layer authenticates before it takes any secret — true since 2026-10-06 | [#16](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/issues/16) |
+| dashboard | LTE settings: consumption against the 360 MB plan, limits and alerts. No Wi-Fi network list — there is no Wi-Fi. The web layer authenticates before it takes any secret — true since 2026-10-06 | [#16](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/issues/16) |
 | dashboard | A device page showing the uplink path per bundle, the firmware build, the installed engines and boot timing | [#14](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/issues/14) |
-| iOS | Provision Wi-Fi and LTE settings onto the dongle over BLE, never over the USB console | [#28](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/28) |
-| iOS | Keep LTE usage, limits and the Wi-Fi network list in step with the server and the dongle | [#30](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/30) |
+| iOS | Provision LTE settings onto the dongle over BLE, never over the USB console. No Wi-Fi credentials to carry any more, which removes the hardest part of [#28](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/28) | [#28](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/28) |
+| iOS | Keep LTE usage and limits in step with the server and the dongle | [#30](https://github.com/ParkWardRR/cairn-ios-companion-app/issues/30) |
+| iOS | **Be the auditor of the LTE path**: on a ready link, reconcile the server's view with the dongle's delivery ledger and show the owner when the two disagree | new |
 
 > **The PKI blocker, stated once.** The `Cairn Private CA` private key does not exist anywhere,
 > so no device client certificate can be issued; `server.pem`'s SAN covers `cairn.alpina.casa`
@@ -932,6 +957,8 @@ break one does not ship.
 | Assignment validity | Judged by the device's monotonic counter, **not** the clock (invariant 3) |
 | Counter reuse | A counter bound to different content is a forgery or a rolled-back device: quarantine, never ingest |
 | Server-side raw data | Stays ciphertext in the CAS; keys live in a wrapped keystore apart from the data directory. Destroying a root crypto-shreds every copy, including backups |
+| Transports (2026-11-05) | **BLE and LTE only.** Wi-Fi is off at compile time on the dongle — one radio, and a Wi-Fi slot takes the BLE stack down with it. BLE is the everyday path and is also **how the LTE path is audited**: the phone reconciles the server's view against the dongle's delivery ledger, re-offers what never arrived and prunes what did. `path=wifi` stays a valid recorded value in `uplink/v1` so historical ledger rows keep their meaning; nothing emits it |
+| LTE plan | **360 MB, expiring 2027-10-20** (TripplePlay, fitted 2026-11-05). Small enough that the on-device cap ([firmware #21](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/21)) is load-bearing, and small enough that LTE is the exception path — for drives that end away from the phone — not the default |
 | LTE payload | **Whole sealed bundles, not digests** (2026-10-07) — see invariant 2. Compression is not worth building either: a trip is about 230 KB, and `gzip -9` reduces AEAD ciphertext only to 90% of raw (measured) |
 | Module delivery | A sixth repository; a module declares the PIDs it needs; declarative at runtime for server, web and iOS, codegen for the firmware |
 | Tagging a contract release | A maintainer, never CI |
@@ -972,6 +999,7 @@ can be recognised as stale rather than followed.
 | 2026-10-10 | **The project gets channels.** The owner's read was that it ran further and faster than intended and parts are rough. Nothing is cancelled and `dev` does not slow down; what changes is that `stable` ships only what has evidence, `beta` carries the rest openly, and [Phase 32](#phase-32--release-engineering-flash-it-from-a-browser--planned) moves onto the critical path because `stable` is public from its first tag ([Phase 36](#phase-36--two-channels-beta-and-stable--planned)) |
 | 2026-10-25 | **A second device: the trail device.** Cairn stops being only a car logger. A handheld LILYGO T-Beam Supreme records hikes, walks and dongle-less drives into the same `format/v3` bundles, in a seventh repository, scheduled as [T1–T8](#t1t8--the-trail-device--in-progress) beside the dongle's phases. The vehicle becomes, by recommendation, a *carrier* of kind `car` or `person` — no format change |
 | 2026-10-08 | Time is collected from **every** source — GNSS, the cellular network, the phone — and the backend chooses. The manifest basis stays first-wins; the `TIME_OBSERVATION` records are the evidence trail |
+| 2026-11-05 | **Two transports, not three: BLE and LTE. Wi-Fi is dropped** (owner). Reverses "the dongle gets Wi-Fi and LTE back" of 2026-10-05. The ESP32 has one radio: every Wi-Fi slot and home scan deinits the BLE stack, which measured out at roughly every 30 s with a bundle waiting, and the coexistence workaround ([#31](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/31)) is what left the dongle advertising an empty payload and undiscoverable after a slot ([#71](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/71)). Wi-Fi had not uploaded since 2026-10-15 anyway. **And BLE becomes the auditor of LTE:** the phone reconciles the server's view against the dongle's delivery ledger, so the unattended path is checked by the attended one rather than trusted. Wi-Fi off at compile time; image drops 84.3% → 60.1% of flash |
 | 2026-11-04 | **The iPhone app is rewritten, not repaired.** Pairing never completed and GPS quick start never ran; the audit traced both to untestable glue in the old app. Same repository and bundle id, old tree retired to `legacy`, new app built core-first as [Phase 37](#phase-37--the-phone-rewritten--in-progress) R0–R6. "GPS quick start" is defined as phone time and position sent as receiver hints, measured by TTFF, because the co-processor blocks AssistNow |
 
 ## Deferred deliberately
@@ -987,7 +1015,7 @@ can be recognised as stale rather than followed.
 | GPU acceleration for analysis | No demonstrated need |
 | `previous_bundle_root` enforcement | The field is populated; detecting deleted historical bundles is a different threat model from detecting corruption |
 | ESP32 deep sleep | Not possible on this board: the IMU interrupt is not routed to an RTC-capable GPIO, so there is no wake-on-motion source — the official Freematics firmware polls for the same reason. Timer-wake deep sleep would reset on every wake, and boot mounts the card and runs a recovery scan, which is more costly than the polling it would replace. Standby instead powers peripherals down, clocks the CPU to 80 MHz and light-sleeps between polls |
-| Compressing the cellular payload | Measured: `gzip -9` takes AEAD ciphertext to 90% of raw, and a 2 GB plan already carries some nine thousand trips |
+| Compressing the cellular payload | Measured: `gzip -9` takes AEAD ciphertext to 90% of raw. **Worth revisiting now the plan is 360 MB, not 2 GB** (2026-11-05): at ~230 KB a trip that is still some fifteen hundred trips, but the 10% is no longer free money, and a measurement on real bundles would settle it — three bundles on the card came to 7.19 MB, which is far above the 230 KB the original figure assumed |
 
 ---
 

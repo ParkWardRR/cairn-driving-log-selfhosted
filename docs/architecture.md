@@ -29,8 +29,8 @@ flowchart LR
   D -- "BLE: GPS assist, diagnostics,<br/>bundle offload (ciphertext)" --- P
   P -- "LAN · signed requests<br/>(sync + bundle relay)" --> A
   P -- "Tailnet" --> TS --> A
-  D -. "Wi-Fi at home<br/>(bounded slots, planned)" .-> A
-  D -- "LTE fallback<br/>(whole sealed bundles)" --> I
+  D -- "LTE when the phone is away<br/>(whole sealed bundles)" --> I
+  P -. "reconciles what LTE sent" .-> A
   A -- "relay → intake" --> CAS
   I -.-> CAS
   I -. escrowed roots .-> KS
@@ -47,9 +47,16 @@ The dongle has three transport paths, tried in order of preference:
 
 1. **BLE → iPhone → Tailscale/LAN → server** (shipped). The phone pulls
    sealed bundles over BLE and uploads them. The preferred everyday path.
-2. **Wi-Fi at home** (planned). Bounded slots when parked near a known
-   network; BLE is the home state and the one radio is time-sliced.
-3. **LTE fallback** (working since 2026-10-07). Carries **whole sealed bundles**,
+2. **LTE, when the drive ends away from the phone** (working since 2026-10-07).
+   ~~Wi-Fi at home~~ was the second path and is **dropped (2026-11-05)**: the
+   ESP32 has one radio, a Wi-Fi slot takes the whole BLE stack down with it, and
+   the workaround for that cost more than Wi-Fi ever earned. Two transports now.
+3. **The phone audits LTE** (planned). On a ready BLE link it reconciles the
+   server's view of this device against the dongle's delivery ledger, re-offers
+   what never arrived and prunes what did. The unattended path is checked by the
+   attended one rather than trusted.
+
+   Detail on the LTE path, which is otherwise as it was: Carries **whole sealed bundles**,
    not digests — the owner reversed the digest plan, because a digest earns no
    receipt and so can never authorise a prune, which means a digest-only path
    never frees the card. Compression was measured and dropped: sealed segments
@@ -91,7 +98,7 @@ package. None of it is implemented.
 
 Classic ESP32 WROVER. Captures GNSS, IMU and OBD into append-only,
 CRC-chained, **AEAD-encrypted** segments; seals them into Ed25519-signed
-bundles; **has no Wi-Fi and no network credentials**: the enrolled phone pulls
+bundles; **has no Wi-Fi** (dropped 2026-11-05) and no network credentials beyond the LTE APN: the enrolled phone pulls
 sealed bundles over BLE and uploads them for it ([ble-offload.md](../contracts/ble/v1/offload.md)).
 It prunes a bundle only after verifying a signed server receipt (handed back by the
 phone) against a key pinned in firmware. The BLE service also accepts phone GNSS
@@ -141,7 +148,8 @@ capture → AEAD frames on SD → seal (manifest: vehicle, assignment, counter, 
         ↓
    CAS (ciphertext) → decode with escrowed key → PostgreSQL / DuckDB → UI, app sync
 
-   (planned) Wi-Fi at home or LTE fallback → same offer/chunk/commit/receipt protocol
+   LTE when the phone is away → same offer/chunk/commit/receipt protocol
+   (planned) phone reconciles the server's ledger against the dongle's → re-offer or prune
 ```
 
 ## Listeners
@@ -152,7 +160,7 @@ capture → AEAD frames on SD → seal (manifest: vehicle, assignment, counter, 
 | `:8444` app API | server TLS; signed requests | iOS app on LAN |
 | `127.0.0.1:8445` app API | loopback HTTP; signed requests; Tailscale Serve headers trusted only from loopback | iOS app over the Tailnet |
 | `127.0.0.1:8480` cairn-tsdb | loopback | UI server |
-| *(planned)* device uplink | TLS 1.3; pinned SPKI; device-signed requests | Dongle over Wi-Fi or LTE ([uplink/v1](../contracts/uplink/v1/spec.md)) |
+| *(planned)* device uplink | TLS 1.3; pinned SPKI; device-signed requests | Dongle over LTE ([uplink/v1](../contracts/uplink/v1/spec.md)). Wi-Fi dropped 2026-11-05; `path=wifi` stays valid in the contract for historical rows |
 
 Remote access is **Tailscale only**, on the host, never Funnel, never port
 forwarding. See [tailscale-deployment.md](https://github.com/ParkWardRR/cairn-vehicle-server/blob/main/docs/tailscale-deployment.md).

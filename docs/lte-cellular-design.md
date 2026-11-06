@@ -1,5 +1,25 @@
 # LTE and cellular connectivity design
 
+> **Updated 2026-11-05: LTE is one of two transports now, not a fallback among three.**
+> Wi-Fi is dropped from the dongle (see [ROADMAP Phase 28](../ROADMAP.md#phase-28--the-networked-dongle-finished--in-progress)),
+> so wherever this document says "briefly activate known Wi-Fi", or treats Wi-Fi as a tier, read
+> **BLE, then LTE**. Three further things this document predates:
+>
+> - **The SIM changed.** The fitted SIM is a **TripplePlay, 360 MB, expiring 2027-10-20**, not
+>   the EIOTCLUB SIM the research below is written against. The EIOTCLUB roaming analysis still
+>   explains *why* roaming-off and strict `CREG` checks break a roaming IoT SIM, which is worth
+>   keeping; its plan and APN specifics no longer describe the hardware. 360 MB is a tight
+>   budget, so the on-device cap
+>   ([firmware #21](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues/21)) is
+>   load-bearing and LTE is for drives that end away from the phone, not for every drive.
+> - **LTE shipped.** On 2026-10-07 it carried a whole trip unattended — 1,295,714 B in 386 s,
+>   0.23% overhead, receipt verified, bundle pruned. "Nothing in this document is implemented"
+>   is no longer true of the transport; it stays true of the credential store, cap enforcement
+>   and scheduling policy.
+> - **BLE audits LTE.** The phone reconciles the server's view of this device against the
+>   dongle's own delivery ledger, so an unattended upload is checked by the attended path rather
+>   than trusted.
+
 > **Design document, not shipped.** Nothing in this document is implemented in
 > committed firmware. The LTE hardware is confirmed present on the car's dongle
 > (SIMCOM SIM7600A-H, 2026-10-07), but no radio transport, credential store or
@@ -20,10 +40,27 @@
 ## 1. Store-and-forward, not live streaming
 
 The cellular path is a **store-and-forward** system: record locally, create
-compressed encrypted bundles once, prefer BLE to the iPhone and Tailscale,
-briefly activate known Wi-Fi when BLE cannot drain the queue, and use LTE as
-the independent fallback. Do not keep a live telemetry stream or VPN session
-running just to deliver occasional bundles.
+compressed encrypted bundles once, prefer BLE to the iPhone and Tailscale, and
+use LTE as the independent path when the phone is not there. Do not keep a live
+telemetry stream or VPN session running just to deliver occasional bundles.
+
+**Two paths, and the attended one audits the unattended one** (2026-11-05). BLE
+is the everyday path and the cheap one. LTE runs when a drive ends away from the
+phone, and nothing watches it at the time — which is why the phone reconciles it
+afterwards. On a ready BLE link the phone asks the server what it holds for this
+device and compares that with the dongle's own delivery ledger:
+
+- a bundle the dongle marked delivered that the server never committed is
+  **re-offered over BLE** — an LTE upload that was lost, truncated or rejected
+  stops being invisible;
+- a bundle the server does hold is **pruned from the card** against its receipt,
+  which is the existing receipt-gated prune and needs no new trust;
+- a disagreement either way is worth showing the owner, because it is the only
+  signal that the unattended path is misbehaving.
+
+This needs no new transport and no new authority: both ends already speak
+`sync/v1`, and the dongle already refuses to prune without a server-signed
+receipt. What is new is that somebody checks.
 
 The important catch: adding an LTE modem to an ESP32 does not automatically
 make it a Tailscale client. For direct cellular uploads, the dongle must use
